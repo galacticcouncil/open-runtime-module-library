@@ -388,6 +388,22 @@ pub mod module {
 
 			Self::do_transfer_multiassets(who, assets.clone(), fee.clone(), dest, dest_weight_limit).map(|_| ())
 		}
+
+		#[pallet::call_index(6)]
+		#[pallet::weight(255)] // TODO: weight/benchmarking
+		pub fn transfer_and_swap(
+			origin: OriginFor<T>,
+			assets: Box<VersionedMultiAssets>,
+			fee_item: u32,
+			dest_chain: Box<VersionedMultiLocation>,
+			dest_weight_limit: WeightLimit,
+			give: Box<VersionedMultiAsset>, // TODO: consider adding support for wild filters
+			want: Box<VersionedMultiAsset>,
+			swap_chain: Box<VersionedMultiLocation>,
+		) -> DispatchResult {
+			// NEXT STEP: write test for this extrinsic (testing for remote swap with deposit on swap chain)
+			todo!()
+		}
 	}
 
 	impl<T: Config> Pallet<T> {
