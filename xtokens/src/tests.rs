@@ -1731,15 +1731,15 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_swap_chain() {
 			Parent,
 			Parachain(2),
 			Junction::from(BoundedVec::try_from(b"B".to_vec()).unwrap()),
-		), 100));
-	let want: VersionedMultiAsset = want_asset.clone().into();
+		),
+		100,
+	));
+	let want: VersionedMultiAsset = want_asset.into();
 	let swap_chain: VersionedMultiLocation = MultiLocation::new(1, Parachain(2)).into();
 
-	ParaB::execute_with(|| {
-		para::MockExchanger::set(want_asset.into());
-	});
-
 	ParaA::execute_with(|| {
+		assert_ok!(ParaTokens::deposit(CurrencyId::A, &ALICE, 1000));
+
 		assert_ok!(ParaXTokens::transfer_and_swap(
 			Some(ALICE).into(),
 			CurrencyId::A,

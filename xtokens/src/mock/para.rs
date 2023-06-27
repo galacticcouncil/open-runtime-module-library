@@ -143,10 +143,6 @@ parameter_types! {
 	pub const MaxAssetsIntoHolding: u32 = 64;
 }
 
-thread_local! {
-	pub static EXCHANGES: RefCell<BTreeMap<u32, Assets>> = RefCell::new(BTreeMap::default());
-}
-
 pub struct MockExchanger;
 impl AssetExchange for MockExchanger {
 	fn exchange_asset(
@@ -155,18 +151,7 @@ impl AssetExchange for MockExchanger {
 			want: &MultiAssets,
 			maximal: bool,
 		) -> Result<Assets, Assets> {
-		EXCHANGES.with(|map| {
-			map.borrow().get(&ParachainInfo::get().into()).cloned()
-		}).ok_or_else(|| give)
-	}
-}
-
-impl MockExchanger {
-	/// Set the assets to return on `ExchangeAsset` for the current parachain.
-	pub fn set(assets: Assets) {
-		EXCHANGES.with(|map| {
-			map.borrow_mut().insert(ParachainInfo::get().into(), assets);
-		});
+		Ok(want.clone().into())
 	}
 }
 

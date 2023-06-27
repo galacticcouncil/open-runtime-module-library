@@ -401,8 +401,53 @@ pub mod module {
 			swap_chain: Box<VersionedMultiLocation>,
 			maximal: bool,
 		) -> DispatchResult {
-			// NEXT STEP: write test for this extrinsic (testing for remote swap with deposit on swap chain)
-			todo!()
+			let who = ensure_signed(origin)?;
+
+			let dest : MultiLocation = (*dest).try_into().map_err(|()| Error::<T>::BadVersion)?;
+			let swap_chain : MultiLocation = (*swap_chain).try_into().map_err(|()| Error::<T>::BadVersion)?;
+			let want : MultiAsset = (*want).try_into().map_err(|()| Error::<T>::BadVersion)?;
+
+			let (dest, recipient) = Self::ensure_valid_dest(&dest)?;
+
+			let location: MultiLocation = T::CurrencyIdConvert::convert(currency_id.clone())
+				.ok_or(Error::<T>::NotCrossChainTransferableCurrency)?;
+
+			let ancestry = T::UniversalLocation::get();
+			let give: MultiAsset = MultiAsset::from((location, amount.into()));
+			let assets: MultiAssets = give.clone().into();
+			let give = give.reanchored(&swap_chain, ancestry).expect("should reanchor give");//TODO: error handling
+			let fee = give.clone();
+			let give: MultiAssetFilter = give.clone().into();
+
+			let max_assets = assets.len() as u32 + 1; //TODO: Use checked math or so
+
+			let xcm = Xcm(vec![
+				Self::buy_execution(fee, &swap_chain, dest_weight_limit)?,
+				ExchangeAsset {
+					give,
+					want: want.into(),
+					maximal,
+				},
+				Self::deposit_asset(recipient, max_assets)
+			]);
+			// executed on local (acala)
+			let mut msg = Xcm(vec![
+				SetFeesMode { jit_withdraw: true },
+				TransferReserveAsset { assets, dest, xcm },
+			]);
+
+			let hash = msg.using_encoded(sp_io::hashing::blake2_256);
+			let origin_location = T::AccountIdToMultiLocation::convert(who.clone());
+
+			let weight = T::Weigher::weight(&mut msg).map_err(|()| Error::<T>::UnweighableMessage)?;
+			T::XcmExecutor::execute_xcm_in_credit(origin_location, msg, hash, weight, weight)
+				.ensure_complete()
+				.map_err(|error| {
+					log::error!("Failed execute transfer message with {:?}", error);
+					Error::<T>::XcmExecutionFailed
+				})?;
+
+			Ok(())
 		}
 	}
 
