@@ -1721,3 +1721,41 @@ fn send_with_insufficient_weight_limit() {
 		assert_eq!(ParaTokens::free_balance(CurrencyId::A, &BOB), 0);
 	});
 }
+
+#[test]
+fn transfer_and_swap_should_send_remote_swap_and_deposit_to_swap_chain() {
+	TestNet::reset();
+
+	let want: VersionedMultiAsset = MultiAsset::from((GeneralIndex(0), 100)).into();
+	let swap_chain: VersionedMultiLocation = MultiLocation::new(1, Parachain(2)).into();
+
+	ParaA::execute_with(|| {
+
+		assert_ok!(ParaXTokens::transfer_and_swap(
+			Some(ALICE).into(),
+			CurrencyId::A,
+			500,
+			Box::new(
+				MultiLocation::new(
+					1,
+					X2(
+						Parachain(2),
+						Junction::AccountId32 {
+							network: None,
+							id: BOB.into(),
+						}
+					)
+				)
+				.into()
+			),
+			WeightLimit::Limited(1.into()),
+			Box::new(want),
+			Box::new(swap_chain)
+		));
+	});
+
+	ParaB::execute_with(|| {
+		// no funds should arrive - message will have failed
+		assert_eq!(ParaTokens::free_balance(CurrencyId::A, &BOB), 0);
+	});
+}

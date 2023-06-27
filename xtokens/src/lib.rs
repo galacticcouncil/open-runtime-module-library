@@ -393,11 +393,10 @@ pub mod module {
 		#[pallet::weight(255)] // TODO: weight/benchmarking
 		pub fn transfer_and_swap(
 			origin: OriginFor<T>,
-			assets: Box<VersionedMultiAssets>,
-			fee_item: u32,
-			dest_chain: Box<VersionedMultiLocation>,
+			currency_id: T::CurrencyId,
+			amount: T::Balance,
+			dest: Box<VersionedMultiLocation>,
 			dest_weight_limit: WeightLimit,
-			give: Box<VersionedMultiAsset>, // TODO: consider adding support for wild filters
 			want: Box<VersionedMultiAsset>,
 			swap_chain: Box<VersionedMultiLocation>,
 		) -> DispatchResult {
