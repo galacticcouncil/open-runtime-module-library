@@ -399,6 +399,7 @@ pub mod module {
 			dest_weight_limit: WeightLimit,
 			want: Box<VersionedMultiAsset>,
 			swap_chain: Box<VersionedMultiLocation>,
+			maximal: bool,
 		) -> DispatchResult {
 			// NEXT STEP: write test for this extrinsic (testing for remote swap with deposit on swap chain)
 			todo!()

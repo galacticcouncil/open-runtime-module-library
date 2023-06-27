@@ -1726,11 +1726,20 @@ fn send_with_insufficient_weight_limit() {
 fn transfer_and_swap_should_send_remote_swap_and_deposit_to_swap_chain() {
 	TestNet::reset();
 
-	let want: VersionedMultiAsset = MultiAsset::from((GeneralIndex(0), 100)).into();
+	let want_asset = MultiAsset::from((
+		(
+			Parent,
+			Parachain(2),
+			Junction::from(BoundedVec::try_from(b"B".to_vec()).unwrap()),
+		), 100));
+	let want: VersionedMultiAsset = want_asset.clone().into();
 	let swap_chain: VersionedMultiLocation = MultiLocation::new(1, Parachain(2)).into();
 
-	ParaA::execute_with(|| {
+	ParaB::execute_with(|| {
+		para::MockExchanger::set(want_asset.into());
+	});
 
+	ParaA::execute_with(|| {
 		assert_ok!(ParaXTokens::transfer_and_swap(
 			Some(ALICE).into(),
 			CurrencyId::A,
@@ -1748,14 +1757,14 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_swap_chain() {
 				)
 				.into()
 			),
-			WeightLimit::Limited(1.into()),
+			WeightLimit::Limited(50.into()),
 			Box::new(want),
-			Box::new(swap_chain)
+			Box::new(swap_chain),
+			true,
 		));
 	});
 
 	ParaB::execute_with(|| {
-		// no funds should arrive - message will have failed
-		assert_eq!(ParaTokens::free_balance(CurrencyId::A, &BOB), 0);
+		assert_eq!(ParaTokens::free_balance(CurrencyId::B, &BOB), 100);
 	});
 }

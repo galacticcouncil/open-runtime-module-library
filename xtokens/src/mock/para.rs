@@ -1,3 +1,5 @@
+use core::cell::RefCell;
+
 use super::{Amount, Balance, CurrencyId, CurrencyIdConvert, ParachainXcmRouter};
 use crate as orml_xtokens;
 
@@ -13,6 +15,7 @@ use sp_runtime::{
 	traits::{Convert, IdentityLookup},
 	AccountId32,
 };
+use sp_std::collections::btree_map::BTreeMap;
 
 use cumulus_primitives_core::{ChannelStatus, GetChannelInfo, ParaId};
 use pallet_xcm::XcmPassthrough;
@@ -23,7 +26,7 @@ use xcm_builder::{
 	ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative, SiblingParachainConvertsVia,
 	SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit,
 };
-use xcm_executor::{Config, XcmExecutor};
+use xcm_executor::{Config, XcmExecutor, traits::AssetExchange, Assets};
 
 use crate::mock::AllTokensAreCreatedEqualToWeight;
 use orml_traits::{location::AbsoluteReserveProvider, parameter_type_with_key};
@@ -140,6 +143,33 @@ parameter_types! {
 	pub const MaxAssetsIntoHolding: u32 = 64;
 }
 
+thread_local! {
+	pub static EXCHANGES: RefCell<BTreeMap<u32, Assets>> = RefCell::new(BTreeMap::default());
+}
+
+pub struct MockExchanger;
+impl AssetExchange for MockExchanger {
+	fn exchange_asset(
+			origin: Option<&MultiLocation>,
+			give: Assets,
+			want: &MultiAssets,
+			maximal: bool,
+		) -> Result<Assets, Assets> {
+		EXCHANGES.with(|map| {
+			map.borrow().get(&ParachainInfo::get().into()).cloned()
+		}).ok_or_else(|| give)
+	}
+}
+
+impl MockExchanger {
+	/// Set the assets to return on `ExchangeAsset` for the current parachain.
+	pub fn set(assets: Assets) {
+		EXCHANGES.with(|map| {
+			map.borrow_mut().insert(ParachainInfo::get().into(), assets);
+		});
+	}
+}
+
 pub struct XcmConfig;
 impl Config for XcmConfig {
 	type RuntimeCall = RuntimeCall;
@@ -157,7 +187,7 @@ impl Config for XcmConfig {
 	type AssetClaims = PolkadotXcm;
 	type SubscriptionService = PolkadotXcm;
 	type AssetLocker = PolkadotXcm;
-	type AssetExchanger = ();
+	type AssetExchanger = MockExchanger;
 	type PalletInstancesInfo = ();
 	type MaxAssetsIntoHolding = MaxAssetsIntoHolding;
 	type FeeManager = ();
