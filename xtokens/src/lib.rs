@@ -432,7 +432,6 @@ pub mod module {
 			]);
 			// executed on local (acala)
 			let mut msg = Xcm(vec![
-				SetFeesMode { jit_withdraw: true },
 				TransferReserveAsset { assets, dest, xcm },
 			]);
 
