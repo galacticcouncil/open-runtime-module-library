@@ -396,43 +396,84 @@ pub mod module {
 			currency_id: T::CurrencyId,
 			amount: T::Balance,
 			dest: Box<VersionedMultiLocation>,
-			dest_weight_limit: WeightLimit,
+			swap_chain_weight_limit: WeightLimit,
 			want: Box<VersionedMultiAsset>,
 			swap_chain: Box<VersionedMultiLocation>,
 			maximal: bool,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let dest : MultiLocation = (*dest).try_into().map_err(|()| Error::<T>::BadVersion)?;
-			let swap_chain : MultiLocation = (*swap_chain).try_into().map_err(|()| Error::<T>::BadVersion)?;
-			let want : MultiAsset = (*want).try_into().map_err(|()| Error::<T>::BadVersion)?;
+			let dest: MultiLocation = (*dest).try_into().map_err(|()| Error::<T>::BadVersion)?;
+			let swap_chain: MultiLocation = (*swap_chain).try_into().map_err(|()| Error::<T>::BadVersion)?;
+			let want: MultiAsset = (*want).try_into().map_err(|()| Error::<T>::BadVersion)?;
+
+			let want_reserve = match want.id {
+				Concrete(loc) => match loc {
+					MultiLocation {
+						parents: 1,
+						interior: X2(parachain, j),
+					} => Ok(MultiLocation::new(1, parachain)),
+					_ => Err(Error::<T>::InvalidAsset),
+				},
+				_ => Err(Error::<T>::InvalidAsset),
+			}?;
+			let ancestry = T::UniversalLocation::get();
+			let want = want.reanchored(&swap_chain, ancestry).expect("should reanchor give"); //TODO: error handling
 
 			let (dest, recipient) = Self::ensure_valid_dest(&dest)?;
 
 			let location: MultiLocation = T::CurrencyIdConvert::convert(currency_id.clone())
 				.ok_or(Error::<T>::NotCrossChainTransferableCurrency)?;
 
-			let ancestry = T::UniversalLocation::get();
 			let give: MultiAsset = MultiAsset::from((location, amount.into()));
 			let assets: MultiAssets = give.clone().into();
-			let give = give.reanchored(&swap_chain, ancestry).expect("should reanchor give");//TODO: error handling
+			let give = give.reanchored(&swap_chain, ancestry).expect("should reanchor give"); //TODO: error handling
 			let fee = give.clone();
 			let give: MultiAssetFilter = give.clone().into();
 
 			let max_assets = assets.len() as u32 + 1; //TODO: Use checked math or so
 
+			let origin_chain = MultiLocation::here()
+				.reanchored(&swap_chain, ancestry)
+				.expect("should reanchor here"); //TODO: error handling
+			let dest_chain_weight_limit = swap_chain_weight_limit.clone(); // TODO: correct weight limiting
+															   // executed on swap_chain
 			let xcm = Xcm(vec![
-				Self::buy_execution(fee, &swap_chain, dest_weight_limit)?,
+				Self::buy_execution(fee, &swap_chain, swap_chain_weight_limit)?,
 				ExchangeAsset {
 					give,
-					want: want.into(),
+					want: want.clone().into(),
 					maximal,
 				},
-				Self::deposit_asset(recipient, max_assets)
+				if dest == swap_chain {
+					Self::deposit_asset(recipient, max_assets)
+				} else if dest == origin_chain {
+					if want_reserve == origin_chain {
+						let reserve = origin_chain;
+						let reanchored_want = want.clone().reanchored(&origin_chain, swap_chain.interior).expect("should reanchor here"); //TODO: error handling
+						InitiateReserveWithdraw {
+							assets: want.into(),
+							reserve,
+							// executed on origin_chain
+							xcm: Xcm(vec![
+								Self::buy_execution(reanchored_want, &reserve, dest_chain_weight_limit)?, // TODO: custom limit?
+								Self::deposit_asset(recipient, max_assets),
+							]),
+						}
+					} else {
+						todo!()
+					}
+				} else {
+					todo!()
+				},
 			]);
-			// executed on local (acala)
+			// executed on origin_chain
 			let mut msg = Xcm(vec![
-				TransferReserveAsset { assets, dest, xcm },
+				TransferReserveAsset {
+					assets,
+					dest: swap_chain,
+					xcm,
+				}, // TODO: support assets where origin_chain is not reserve
 			]);
 
 			let hash = msg.using_encoded(sp_io::hashing::blake2_256);
