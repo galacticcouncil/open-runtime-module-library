@@ -450,7 +450,7 @@ pub mod module {
 				} else if dest == origin_chain {
 					if want_reserve == origin_chain {
 						let reserve = origin_chain;
-						let reanchored_want = want
+						let fees = want
 							.clone()
 							.reanchored(&origin_chain, swap_chain.interior)
 							.expect("should reanchor here"); //TODO: error handling
@@ -459,7 +459,10 @@ pub mod module {
 							reserve,
 							// executed on origin_chain
 							xcm: Xcm(vec![
-								Self::buy_execution(reanchored_want, &reserve, dest_chain_weight_limit)?, // TODO: custom limit?
+								BuyExecution {
+									fees,
+									weight_limit: dest_chain_weight_limit, //TODO: custom limit?
+								},
 								Self::deposit_asset(recipient, max_assets),
 							]),
 						}
