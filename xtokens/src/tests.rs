@@ -1770,7 +1770,7 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_swap_chain() {
 }
 
 #[test]
-fn transfer_and_swap_should_send_remote_swap_and_deposit_to_origin() {
+fn transfer_and_swap_should_send_remote_swap_and_deposit_to_origin_with_origin_chain_reserve() {
 	TestNet::reset();
 
 	let want_asset = MultiAsset::from((
@@ -1819,3 +1819,53 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_origin() {
 		assert_eq!(ParaTokens::free_balance(CurrencyId::A1, &BOB), 100 - fee);
 	});
 }
+
+#[test]
+fn transfer_and_swap_should_send_remote_swap_and_deposit_to_origin_with_swap_chain_reserve() {
+	TestNet::reset();
+
+	let want_asset = MultiAsset::from((
+		(
+			Parent,
+			Parachain(2),
+			Junction::from(BoundedVec::try_from(b"B1".to_vec()).unwrap()),
+		),
+		100,
+	));
+	let want: VersionedMultiAsset = want_asset.into();
+	let swap_chain: VersionedMultiLocation = MultiLocation::new(1, Parachain(2)).into();
+
+	ParaA::execute_with(|| {
+		assert_ok!(ParaTokens::deposit(CurrencyId::A, &ALICE, 1000));
+
+		assert_ok!(ParaXTokens::transfer_and_swap(
+			Some(ALICE).into(),
+			CurrencyId::A,
+			500,
+			Box::new(
+				MultiLocation::new(
+					1,
+					X2(
+						Parachain(1),
+						Junction::AccountId32 {
+							network: None,
+							id: BOB.into(),
+						}
+					)
+				)
+				.into()
+			),
+			WeightLimit::Limited(100.into()),
+			Box::new(want),
+			Box::new(swap_chain),
+			true,
+		));
+	});
+
+	ParaA::execute_with(|| {
+		let fee = 40;
+		assert_eq!(ParaTokens::free_balance(CurrencyId::B1, &BOB), 100 - fee);
+	});
+}
+
+//TODO: add test for transfer_and_swap transfers the things
