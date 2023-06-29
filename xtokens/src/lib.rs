@@ -448,6 +448,7 @@ pub mod module {
 				if dest == swap_chain {
 					Self::deposit_asset(recipient, max_assets)
 				} else if dest == origin_chain {
+					let weight_limit = dest_chain_weight_limit;
 					if want_reserve == origin_chain {
 						let reserve = origin_chain;
 						let fees = want
@@ -461,13 +462,12 @@ pub mod module {
 							xcm: Xcm(vec![
 								BuyExecution {
 									fees,
-									weight_limit: dest_chain_weight_limit, //TODO: custom limit?
+									weight_limit, //TODO: custom limit?
 								},
 								Self::deposit_asset(recipient, max_assets),
 							]),
 						}
 					} else if want_reserve == swap_chain {
-						let reserve = swap_chain;
 						let fees = want
 							.clone()
 							.reanchored(&origin_chain, swap_chain.interior)
@@ -477,15 +477,46 @@ pub mod module {
 							assets: want.clone().into(),
 							dest: origin_chain,
 							xcm: Xcm(vec![
-								BuyExecution {
-									fees,
-									weight_limit: dest_chain_weight_limit,
-								}, // TODO: custom limit?
+								BuyExecution { fees, weight_limit }, // TODO: custom limit?
 								Self::deposit_asset(recipient, max_assets),
 							]),
 						}
 					} else {
-						todo!()
+						let fees: MultiAsset = (
+							want.id,
+							match want.fun {
+								Fungible(f) => f / 2,
+								_ => panic!("not fungible"),
+							},
+						)
+							.into(); // TODO: make elegant
+						let reserve_fees = fees
+							.clone()
+							.reanchored(&want_reserve, swap_chain.interior)
+							.expect("should reanchor here"); //TODO: error handling
+						let fees = fees
+							.clone()
+							.reanchored(&dest, want_reserve.interior)
+							.expect("should reanchor here"); //TODO: error handling
+						let assets = MultiAssetFilter::from((want.id, WildFungibility::Fungible));
+						InitiateReserveWithdraw {
+							assets,
+							reserve: want_reserve,
+							xcm: Xcm(vec![
+								BuyExecution {
+									fees: reserve_fees,
+									weight_limit: weight_limit.clone(),
+								},
+								DepositReserveAsset {
+									assets: Wild(AllCounted(max_assets)),
+									dest,
+									xcm: Xcm(vec![
+										BuyExecution { fees, weight_limit },
+										Self::deposit_asset(recipient, max_assets),
+									]),
+								},
+							]),
+						}
 					}
 				} else {
 					todo!()

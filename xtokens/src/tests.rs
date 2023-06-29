@@ -1868,4 +1868,59 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_origin_with_swap_cha
 	});
 }
 
-//TODO: add test for transfer_and_swap transfers the things
+#[test]
+fn transfer_and_swap_should_send_remote_swap_and_deposit_to_origin_with_third_chain_reserve() {
+	TestNet::reset();
+
+	let want_asset = MultiAsset::from((
+		(
+			Parent,
+			Parachain(4),
+			Junction::from(BoundedVec::try_from(b"D".to_vec()).unwrap()),
+		),
+		500,
+	));
+	let want: VersionedMultiAsset = want_asset.into();
+	let swap_chain: VersionedMultiLocation = MultiLocation::new(1, Parachain(2)).into();
+
+	ParaD::execute_with(|| {
+		use xcm_executor::traits::Convert;
+		let para_account = para::LocationToAccountId::convert((Parent, Parachain(2)).into()).unwrap();
+		assert_ok!(ParaTokens::deposit(CurrencyId::D, &para_account, 1000));
+	});
+
+	ParaA::execute_with(|| {
+		assert_ok!(ParaTokens::deposit(CurrencyId::A, &ALICE, 1000));
+
+		assert_ok!(ParaXTokens::transfer_and_swap(
+			Some(ALICE).into(),
+			CurrencyId::A,
+			500,
+			Box::new(
+				MultiLocation::new(
+					1,
+					X2(
+						Parachain(1),
+						Junction::AccountId32 {
+							network: None,
+							id: BOB.into(),
+						}
+					)
+				)
+				.into()
+			),
+			WeightLimit::Limited(100.into()),
+			Box::new(want),
+			Box::new(swap_chain),
+			true,
+		));
+	});
+
+	ParaA::execute_with(|| {
+		let fees = 80;
+		assert_eq!(ParaTokens::free_balance(CurrencyId::D, &BOB), 500 - fees);
+	});
+}
+
+// TODO: add test for transfer_and_swap transfers the things
+// TODO: add test for supporting swap of relay currency (R)
