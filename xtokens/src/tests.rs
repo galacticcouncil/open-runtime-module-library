@@ -1922,5 +1922,54 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_origin_with_third_ch
 	});
 }
 
+#[test]
+fn transfer_and_swap_should_fail_when_destination_is_neither_origin_nor_swap_chain() {
+	TestNet::reset();
+
+	let want_asset = MultiAsset::from((
+		(
+			Parent,
+			Parachain(1),
+			Junction::from(BoundedVec::try_from(b"A1".to_vec()).unwrap()),
+		),
+		100,
+	));
+	let want: VersionedMultiAsset = want_asset.into();
+	let swap_chain: VersionedMultiLocation = MultiLocation::new(1, Parachain(2)).into();
+
+	ParaA::execute_with(|| {
+		assert_ok!(ParaTokens::deposit(CurrencyId::A, &ALICE, 1000));
+		use xcm_executor::traits::Convert;
+		let para_account = para::LocationToAccountId::convert((Parent, Parachain(2)).into()).unwrap();
+		assert_ok!(ParaTokens::deposit(CurrencyId::A1, &para_account, 1000));
+
+		assert_noop!(
+			ParaXTokens::transfer_and_swap(
+				Some(ALICE).into(),
+				CurrencyId::A,
+				500,
+				Box::new(
+					MultiLocation::new(
+						1,
+						X2(
+							Parachain(3),
+							Junction::AccountId32 {
+								network: None,
+								id: BOB.into(),
+							}
+						)
+					)
+					.into()
+				),
+				WeightLimit::Limited(100.into()),
+				Box::new(want),
+				Box::new(swap_chain),
+				true,
+			),
+			Error::<para::Runtime>::NotSupportedMultiLocation
+		);
+	});
+}
+
 // TODO: add test for transfer_and_swap transfers the things
 // TODO: add test for supporting swap of relay currency (R)

@@ -519,7 +519,7 @@ pub mod module {
 						}
 					}
 				} else {
-					todo!()
+					return Err(Error::<T>::NotSupportedMultiLocation.into());
 				},
 			]);
 			// executed on origin_chain
