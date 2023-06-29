@@ -436,8 +436,9 @@ pub mod module {
 			let origin_chain = MultiLocation::here()
 				.reanchored(&swap_chain, ancestry)
 				.expect("should reanchor here"); //TODO: error handling
-			let dest_chain_weight_limit = swap_chain_weight_limit.clone(); // TODO: correct weight limiting
-															   // executed on swap_chain
+
+			let weight_limit = swap_chain_weight_limit.clone(); //TODO: consider defining custom weight limit for different chains
+													// executed on swap_chain
 			let xcm = Xcm(vec![
 				Self::buy_execution(fee, &swap_chain, swap_chain_weight_limit)?,
 				ExchangeAsset {
@@ -448,7 +449,6 @@ pub mod module {
 				if dest == swap_chain {
 					Self::deposit_asset(recipient, max_assets)
 				} else if dest == origin_chain {
-					let weight_limit = dest_chain_weight_limit;
 					if want_reserve == origin_chain {
 						let reserve = origin_chain;
 						let fees = want
@@ -519,7 +519,27 @@ pub mod module {
 						}
 					}
 				} else {
-					return Err(Error::<T>::NotSupportedMultiLocation.into());
+					if want_reserve == dest {
+						let reserve = dest;
+						let fees = want
+							.clone()
+							.reanchored(&dest, swap_chain.interior)
+							.expect("should reanchor here"); //TODO: error handling
+						InitiateReserveWithdraw {
+							assets: want.into(),
+							reserve,
+							// executed on origin_chain
+							xcm: Xcm(vec![
+								BuyExecution {
+									fees,
+									weight_limit, //TODO: custom limit?
+								},
+								Self::deposit_asset(recipient, max_assets),
+							]),
+						}
+					} else {
+						todo!()
+					}
 				},
 			]);
 			// executed on origin_chain

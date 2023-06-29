@@ -1923,51 +1923,57 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_origin_with_third_ch
 }
 
 #[test]
-fn transfer_and_swap_should_fail_when_destination_is_neither_origin_nor_swap_chain() {
+fn transfer_and_swap_should_send_remote_and_deposit_to_third_chain_with_third_chain_reserve() {
 	TestNet::reset();
 
 	let want_asset = MultiAsset::from((
 		(
 			Parent,
-			Parachain(1),
-			Junction::from(BoundedVec::try_from(b"A1".to_vec()).unwrap()),
+			Parachain(4),
+			Junction::from(BoundedVec::try_from(b"D".to_vec()).unwrap()),
 		),
-		100,
+		500,
 	));
 	let want: VersionedMultiAsset = want_asset.into();
 	let swap_chain: VersionedMultiLocation = MultiLocation::new(1, Parachain(2)).into();
 
-	ParaA::execute_with(|| {
-		assert_ok!(ParaTokens::deposit(CurrencyId::A, &ALICE, 1000));
+	//TODO: extract this to a helper function as it is duplicated
+	ParaD::execute_with(|| {
 		use xcm_executor::traits::Convert;
 		let para_account = para::LocationToAccountId::convert((Parent, Parachain(2)).into()).unwrap();
-		assert_ok!(ParaTokens::deposit(CurrencyId::A1, &para_account, 1000));
+		assert_ok!(ParaTokens::deposit(CurrencyId::D, &para_account, 1000));
+	});
 
-		assert_noop!(
-			ParaXTokens::transfer_and_swap(
-				Some(ALICE).into(),
-				CurrencyId::A,
-				500,
-				Box::new(
-					MultiLocation::new(
-						1,
-						X2(
-							Parachain(3),
-							Junction::AccountId32 {
-								network: None,
-								id: BOB.into(),
-							}
-						)
+	ParaA::execute_with(|| {
+		assert_ok!(ParaTokens::deposit(CurrencyId::A, &ALICE, 1000));
+
+		assert_ok!(ParaXTokens::transfer_and_swap(
+			Some(ALICE).into(),
+			CurrencyId::A,
+			500,
+			Box::new(
+				MultiLocation::new(
+					1,
+					X2(
+						Parachain(4),
+						Junction::AccountId32 {
+							network: None,
+							id: BOB.into(),
+						}
 					)
-					.into()
-				),
-				WeightLimit::Limited(100.into()),
-				Box::new(want),
-				Box::new(swap_chain),
-				true,
+				)
+				.into()
 			),
-			Error::<para::Runtime>::NotSupportedMultiLocation
-		);
+			WeightLimit::Limited(100.into()),
+			Box::new(want),
+			Box::new(swap_chain),
+			true,
+		));
+	});
+
+	ParaD::execute_with(|| {
+		let fee = 40;
+		assert_eq!(ParaTokens::free_balance(CurrencyId::D, &BOB), 500 - fee);
 	});
 }
 
