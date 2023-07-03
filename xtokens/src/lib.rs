@@ -464,6 +464,7 @@ pub mod module {
 									fees,
 									weight_limit, //TODO: custom limit?
 								},
+								//TODO: ask Alex - why this is not desposit reserve asset? We deposit reserve asset there
 								Self::deposit_asset(recipient, max_assets),
 							]),
 						}
@@ -534,6 +535,21 @@ pub mod module {
 									fees,
 									weight_limit, //TODO: custom limit?
 								},
+								Self::deposit_asset(recipient, max_assets),
+							]),
+						}
+					} else if want_reserve == swap_chain {
+						//TODO: remove duplication as this part is duplicated from the case when we send back swap chain reserve to origin chain
+						let fees = want
+							.clone()
+							.reanchored(&dest, swap_chain.interior)
+							.expect("should reanchor here"); //TODO: error handling
+
+						DepositReserveAsset {
+							assets: want.clone().into(),
+							dest,
+							xcm: Xcm(vec![
+								BuyExecution { fees, weight_limit }, // TODO: custom limit?
 								Self::deposit_asset(recipient, max_assets),
 							]),
 						}
