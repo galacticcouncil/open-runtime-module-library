@@ -40,7 +40,11 @@ fn sibling_d_account() -> AccountId32 {
 }
 
 fn swap_chain() -> VersionedMultiLocation {
-	MultiLocation::new(1, Parachain(2)).into()
+	MultiLocation::new(1, swap_chain_interior()).into()
+}
+
+fn swap_chain_interior() -> Junctions {
+	Parachain(2).into()
 }
 
 fn bob_on_parachain(para_id: u32) -> VersionedMultiLocation {
@@ -1792,7 +1796,7 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_origin_with_origin_c
 	ParaA::execute_with(|| {
 		assert_ok!(ParaTokens::deposit(CurrencyId::A, &ALICE, 1000));
 		use xcm_executor::traits::Convert;
-		let para_account = para::LocationToAccountId::convert((Parent, Parachain(2)).into()).unwrap();
+		let para_account = para::LocationToAccountId::convert((Parent, swap_chain_interior()).into()).unwrap();
 		assert_ok!(ParaTokens::deposit(CurrencyId::A1, &para_account, 1000));
 
 		assert_ok!(ParaXTokens::transfer_and_swap(
@@ -1864,7 +1868,7 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_origin_with_third_ch
 
 	ParaD::execute_with(|| {
 		use xcm_executor::traits::Convert;
-		let para_account = para::LocationToAccountId::convert((Parent, Parachain(2)).into()).unwrap();
+		let para_account = para::LocationToAccountId::convert((Parent, swap_chain_interior()).into()).unwrap();
 		assert_ok!(ParaTokens::deposit(CurrencyId::D, &para_account, 1000));
 	});
 
@@ -1903,10 +1907,9 @@ fn transfer_and_swap_should_send_remote_and_deposit_to_third_chain_with_third_ch
 	));
 	let want: VersionedMultiAsset = want_asset.into();
 
-	//TODO: extract this to a helper function as it is duplicated
 	ParaD::execute_with(|| {
 		use xcm_executor::traits::Convert;
-		let para_account = para::LocationToAccountId::convert((Parent, Parachain(2)).into()).unwrap();
+		let para_account = para::LocationToAccountId::convert((Parent, swap_chain_interior()).into()).unwrap();
 		assert_ok!(ParaTokens::deposit(CurrencyId::D, &para_account, 1000));
 	});
 
@@ -1982,7 +1985,7 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_third_chain_with_oth
 
 	ParaC::execute_with(|| {
 		use xcm_executor::traits::Convert;
-		let para_account = para::LocationToAccountId::convert((Parent, Parachain(2)).into()).unwrap();
+		let para_account = para::LocationToAccountId::convert((Parent, swap_chain_interior()).into()).unwrap();
 		assert_ok!(ParaTokens::deposit(CurrencyId::C, &para_account, 1000));
 	});
 
