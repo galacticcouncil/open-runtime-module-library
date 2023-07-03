@@ -43,6 +43,20 @@ fn swap_chain() -> VersionedMultiLocation {
 	MultiLocation::new(1, Parachain(2)).into()
 }
 
+fn bob_on_parachain(para_id: u32) -> VersionedMultiLocation {
+	MultiLocation::new(
+		1,
+		X2(
+			Parachain(para_id),
+			Junction::AccountId32 {
+				network: None,
+				id: BOB.into(),
+			},
+		),
+	)
+	.into()
+}
+
 // Not used in any unit tests, but it's super helpful for debugging. Let's
 // keep it here.
 #[allow(dead_code)]
@@ -1748,19 +1762,7 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_swap_chain() {
 			Some(ALICE).into(),
 			CurrencyId::A,
 			500,
-			Box::new(
-				MultiLocation::new(
-					1,
-					X2(
-						Parachain(2),
-						Junction::AccountId32 {
-							network: None,
-							id: BOB.into(),
-						}
-					)
-				)
-				.into()
-			),
+			Box::new(bob_on_parachain(2)),
 			WeightLimit::Limited(50.into()),
 			Box::new(want),
 			Box::new(swap_chain()),
@@ -1797,19 +1799,7 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_origin_with_origin_c
 			Some(ALICE).into(),
 			CurrencyId::A,
 			500,
-			Box::new(
-				MultiLocation::new(
-					1,
-					X2(
-						Parachain(1),
-						Junction::AccountId32 {
-							network: None,
-							id: BOB.into(),
-						}
-					)
-				)
-				.into()
-			),
+			Box::new(bob_on_parachain(1)),
 			WeightLimit::Limited(100.into()),
 			Box::new(want),
 			Box::new(swap_chain()),
@@ -1844,19 +1834,7 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_origin_with_swap_cha
 			Some(ALICE).into(),
 			CurrencyId::A,
 			500,
-			Box::new(
-				MultiLocation::new(
-					1,
-					X2(
-						Parachain(1),
-						Junction::AccountId32 {
-							network: None,
-							id: BOB.into(),
-						}
-					)
-				)
-				.into()
-			),
+			Box::new(bob_on_parachain(1)),
 			WeightLimit::Limited(100.into()),
 			Box::new(want),
 			Box::new(swap_chain()),
@@ -1897,19 +1875,7 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_origin_with_third_ch
 			Some(ALICE).into(),
 			CurrencyId::A,
 			500,
-			Box::new(
-				MultiLocation::new(
-					1,
-					X2(
-						Parachain(1),
-						Junction::AccountId32 {
-							network: None,
-							id: BOB.into(),
-						}
-					)
-				)
-				.into()
-			),
+			Box::new(bob_on_parachain(1)),
 			WeightLimit::Limited(100.into()),
 			Box::new(want),
 			Box::new(swap_chain()),
@@ -1951,19 +1917,7 @@ fn transfer_and_swap_should_send_remote_and_deposit_to_third_chain_with_third_ch
 			Some(ALICE).into(),
 			CurrencyId::A,
 			500,
-			Box::new(
-				MultiLocation::new(
-					1,
-					X2(
-						Parachain(4),
-						Junction::AccountId32 {
-							network: None,
-							id: BOB.into(),
-						}
-					)
-				)
-				.into()
-			),
+			Box::new(bob_on_parachain(4)),
 			WeightLimit::Limited(100.into()),
 			Box::new(want),
 			Box::new(swap_chain()),
@@ -1998,19 +1952,7 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_third_chain_with_swa
 			Some(ALICE).into(),
 			CurrencyId::A,
 			500,
-			Box::new(
-				MultiLocation::new(
-					1,
-					X2(
-						Parachain(4),
-						Junction::AccountId32 {
-							network: None,
-							id: BOB.into(),
-						}
-					)
-				)
-				.into()
-			),
+			Box::new(bob_on_parachain(4)),
 			WeightLimit::Limited(100.into()),
 			Box::new(want),
 			Box::new(swap_chain()),
@@ -2051,19 +1993,7 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_third_chain_with_oth
 			Some(ALICE).into(),
 			CurrencyId::A,
 			500,
-			Box::new(
-				MultiLocation::new(
-					1,
-					X2(
-						Parachain(4),
-						Junction::AccountId32 {
-							network: None,
-							id: BOB.into(),
-						}
-					)
-				)
-				.into()
-			),
+			Box::new(bob_on_parachain(4)),
 			WeightLimit::Limited(100.into()),
 			Box::new(want),
 			Box::new(swap_chain()),
