@@ -39,6 +39,10 @@ fn sibling_d_account() -> AccountId32 {
 	Sibling::from(4).into_account_truncating()
 }
 
+fn swap_chain() -> VersionedMultiLocation {
+	MultiLocation::new(1, Parachain(2)).into()
+}
+
 // Not used in any unit tests, but it's super helpful for debugging. Let's
 // keep it here.
 #[allow(dead_code)]
@@ -1726,16 +1730,16 @@ fn send_with_insufficient_weight_limit() {
 fn transfer_and_swap_should_send_remote_swap_and_deposit_to_swap_chain() {
 	TestNet::reset();
 
-	let want_asset = MultiAsset::from((
+	let want_asset: VersionedMultiAsset = MultiAsset::from((
 		(
 			Parent,
 			Parachain(2),
 			Junction::from(BoundedVec::try_from(b"B".to_vec()).unwrap()),
 		),
 		100,
-	));
+	))
+	.into();
 	let want: VersionedMultiAsset = want_asset.into();
-	let swap_chain: VersionedMultiLocation = MultiLocation::new(1, Parachain(2)).into();
 
 	ParaA::execute_with(|| {
 		assert_ok!(ParaTokens::deposit(CurrencyId::A, &ALICE, 1000));
@@ -1759,7 +1763,7 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_swap_chain() {
 			),
 			WeightLimit::Limited(50.into()),
 			Box::new(want),
-			Box::new(swap_chain),
+			Box::new(swap_chain()),
 			true,
 		));
 	});
@@ -1782,7 +1786,6 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_origin_with_origin_c
 		100,
 	));
 	let want: VersionedMultiAsset = want_asset.into();
-	let swap_chain: VersionedMultiLocation = MultiLocation::new(1, Parachain(2)).into();
 
 	ParaA::execute_with(|| {
 		assert_ok!(ParaTokens::deposit(CurrencyId::A, &ALICE, 1000));
@@ -1809,7 +1812,7 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_origin_with_origin_c
 			),
 			WeightLimit::Limited(100.into()),
 			Box::new(want),
-			Box::new(swap_chain),
+			Box::new(swap_chain()),
 			true,
 		));
 	});
@@ -1833,7 +1836,6 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_origin_with_swap_cha
 		100,
 	));
 	let want: VersionedMultiAsset = want_asset.into();
-	let swap_chain: VersionedMultiLocation = MultiLocation::new(1, Parachain(2)).into();
 
 	ParaA::execute_with(|| {
 		assert_ok!(ParaTokens::deposit(CurrencyId::A, &ALICE, 1000));
@@ -1857,7 +1859,7 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_origin_with_swap_cha
 			),
 			WeightLimit::Limited(100.into()),
 			Box::new(want),
-			Box::new(swap_chain),
+			Box::new(swap_chain()),
 			true,
 		));
 	});
@@ -1881,7 +1883,6 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_origin_with_third_ch
 		500,
 	));
 	let want: VersionedMultiAsset = want_asset.into();
-	let swap_chain: VersionedMultiLocation = MultiLocation::new(1, Parachain(2)).into();
 
 	ParaD::execute_with(|| {
 		use xcm_executor::traits::Convert;
@@ -1911,7 +1912,7 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_origin_with_third_ch
 			),
 			WeightLimit::Limited(100.into()),
 			Box::new(want),
-			Box::new(swap_chain),
+			Box::new(swap_chain()),
 			true,
 		));
 	});
@@ -1935,7 +1936,6 @@ fn transfer_and_swap_should_send_remote_and_deposit_to_third_chain_with_third_ch
 		500,
 	));
 	let want: VersionedMultiAsset = want_asset.into();
-	let swap_chain: VersionedMultiLocation = MultiLocation::new(1, Parachain(2)).into();
 
 	//TODO: extract this to a helper function as it is duplicated
 	ParaD::execute_with(|| {
@@ -1966,7 +1966,7 @@ fn transfer_and_swap_should_send_remote_and_deposit_to_third_chain_with_third_ch
 			),
 			WeightLimit::Limited(100.into()),
 			Box::new(want),
-			Box::new(swap_chain),
+			Box::new(swap_chain()),
 			true,
 		));
 	});
@@ -1990,7 +1990,6 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_third_chain_with_swa
 		500,
 	));
 	let want: VersionedMultiAsset = want_asset.into();
-	let swap_chain: VersionedMultiLocation = MultiLocation::new(1, Parachain(2)).into();
 
 	ParaA::execute_with(|| {
 		assert_ok!(ParaTokens::deposit(CurrencyId::A, &ALICE, 1000));
@@ -2014,7 +2013,7 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_third_chain_with_swa
 			),
 			WeightLimit::Limited(100.into()),
 			Box::new(want),
-			Box::new(swap_chain),
+			Box::new(swap_chain()),
 			true,
 		));
 	});
@@ -2038,7 +2037,6 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_third_chain_with_oth
 		500,
 	));
 	let want: VersionedMultiAsset = want_asset.into();
-	let swap_chain: VersionedMultiLocation = MultiLocation::new(1, Parachain(2)).into();
 
 	ParaC::execute_with(|| {
 		use xcm_executor::traits::Convert;
@@ -2068,7 +2066,7 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_third_chain_with_oth
 			),
 			WeightLimit::Limited(100.into()),
 			Box::new(want),
-			Box::new(swap_chain),
+			Box::new(swap_chain()),
 			true,
 		));
 	});
