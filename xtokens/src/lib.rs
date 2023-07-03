@@ -554,7 +554,42 @@ pub mod module {
 							]),
 						}
 					} else {
-						todo!("Add support for other reserves")
+						//TODO: remove duplication
+						let fees: MultiAsset = (
+							want.id,
+							match want.fun {
+								Fungible(f) => f / 2,
+								_ => panic!("not fungible"),
+							},
+						)
+							.into(); // TODO: make elegant
+						let reserve_fees = fees
+							.clone()
+							.reanchored(&want_reserve, swap_chain.interior)
+							.expect("should reanchor here"); //TODO: error handling
+						let fees = fees
+							.clone()
+							.reanchored(&dest, want_reserve.interior)
+							.expect("should reanchor here"); //TODO: error handling
+						let assets = MultiAssetFilter::from((want.id, WildFungibility::Fungible));
+						InitiateReserveWithdraw {
+							assets,
+							reserve: want_reserve,
+							xcm: Xcm(vec![
+								BuyExecution {
+									fees: reserve_fees,
+									weight_limit: weight_limit.clone(),
+								},
+								DepositReserveAsset {
+									assets: Wild(AllCounted(max_assets)),
+									dest,
+									xcm: Xcm(vec![
+										BuyExecution { fees, weight_limit },
+										Self::deposit_asset(recipient, max_assets),
+									]),
+								},
+							]),
+						}
 					}
 				},
 			]);
