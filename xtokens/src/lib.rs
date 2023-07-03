@@ -483,14 +483,11 @@ pub mod module {
 							]),
 						}
 					} else {
-						let fees: MultiAsset = (
-							want.id,
-							match want.fun {
-								Fungible(f) => f / 2,
-								_ => panic!("not fungible"),
-							},
-						)
-							.into(); // TODO: make elegant
+						let Fungible(fee_amount) = want.fun else {
+							return Err(Error::<T>::InvalidAsset.into())
+						};
+						let fees: MultiAsset = (want.id, fee_amount / 2).into(); // TODO: use proper math
+
 						let reserve_fees = fees
 							.clone()
 							.reanchored(&want_reserve, swap_chain.interior)
@@ -555,14 +552,11 @@ pub mod module {
 						}
 					} else {
 						//TODO: remove duplication
-						let fees: MultiAsset = (
-							want.id,
-							match want.fun {
-								Fungible(f) => f / 2,
-								_ => panic!("not fungible"),
-							},
-						)
-							.into(); // TODO: make elegant
+						let Fungible(fee_amount) = want.fun else {
+							return Err(Error::<T>::InvalidAsset.into())
+						};
+						let fees: MultiAsset = (want.id, fee_amount / 2).into(); // TODO: use proper math
+
 						let reserve_fees = fees
 							.clone()
 							.reanchored(&want_reserve, swap_chain.interior)
