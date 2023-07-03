@@ -2081,3 +2081,4 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_third_chain_with_oth
 
 // TODO: add test for transfer_and_swap transfers the things
 // TODO: add test for supporting swap of relay currency (R)
+// TODO: transfer and swap to invalid chain fails
