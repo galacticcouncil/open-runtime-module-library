@@ -444,6 +444,8 @@ pub mod module {
 
 			let weight_limit = swap_chain_weight_limit.clone(); //TODO: consider defining custom weight limit for different chains
 
+			//TODO: transfer_to_reserve and transfer_to_non_reserve have WithdrawAsset instruction. Do we need to add them in our cases as welL?
+
 			// executed on swap_chain
 			let xcm = Xcm(vec![
 				Self::buy_execution(fee, &swap_chain, swap_chain_weight_limit)?,
