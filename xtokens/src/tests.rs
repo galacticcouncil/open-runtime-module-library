@@ -1748,7 +1748,7 @@ fn send_with_insufficient_weight_limit() {
 fn transfer_and_swap_should_send_remote_swap_and_deposit_to_swap_chain() {
 	TestNet::reset();
 
-	let want_asset: VersionedMultiAsset = MultiAsset::from((
+	let want: VersionedMultiAsset = MultiAsset::from((
 		(
 			Parent,
 			Parachain(2),
@@ -1757,7 +1757,6 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_swap_chain() {
 		100,
 	))
 	.into();
-	let want: VersionedMultiAsset = want_asset.into();
 
 	ParaA::execute_with(|| {
 		assert_ok!(ParaTokens::deposit(CurrencyId::A, &ALICE, 1000));
@@ -1783,15 +1782,15 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_swap_chain() {
 fn transfer_and_swap_should_send_remote_swap_and_deposit_to_origin_with_origin_chain_reserve() {
 	TestNet::reset();
 
-	let want_asset = MultiAsset::from((
+	let want: VersionedMultiAsset = MultiAsset::from((
 		(
 			Parent,
 			Parachain(1),
 			Junction::from(BoundedVec::try_from(b"A1".to_vec()).unwrap()),
 		),
 		100,
-	));
-	let want: VersionedMultiAsset = want_asset.into();
+	))
+	.into();
 
 	ParaA::execute_with(|| {
 		assert_ok!(ParaTokens::deposit(CurrencyId::A, &ALICE, 1000));
@@ -1821,15 +1820,15 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_origin_with_origin_c
 fn transfer_and_swap_should_send_remote_swap_and_deposit_to_origin_with_swap_chain_reserve() {
 	TestNet::reset();
 
-	let want_asset = MultiAsset::from((
+	let want: VersionedMultiAsset = MultiAsset::from((
 		(
 			Parent,
 			Parachain(2),
 			Junction::from(BoundedVec::try_from(b"B1".to_vec()).unwrap()),
 		),
 		100,
-	));
-	let want: VersionedMultiAsset = want_asset.into();
+	))
+	.into();
 
 	ParaA::execute_with(|| {
 		assert_ok!(ParaTokens::deposit(CurrencyId::A, &ALICE, 1000));
@@ -1856,15 +1855,15 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_origin_with_swap_cha
 fn transfer_and_swap_should_send_remote_swap_and_deposit_to_origin_with_third_chain_reserve() {
 	TestNet::reset();
 
-	let want_asset = MultiAsset::from((
+	let want: VersionedMultiAsset = MultiAsset::from((
 		(
 			Parent,
 			Parachain(4),
 			Junction::from(BoundedVec::try_from(b"D".to_vec()).unwrap()),
 		),
 		500,
-	));
-	let want: VersionedMultiAsset = want_asset.into();
+	))
+	.into();
 
 	ParaD::execute_with(|| {
 		use xcm_executor::traits::Convert;
@@ -1897,15 +1896,15 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_origin_with_third_ch
 fn transfer_and_swap_should_send_remote_and_deposit_to_third_chain_with_third_chain_reserve() {
 	TestNet::reset();
 
-	let want_asset = MultiAsset::from((
+	let want: VersionedMultiAsset = MultiAsset::from((
 		(
 			Parent,
 			Parachain(4),
 			Junction::from(BoundedVec::try_from(b"D".to_vec()).unwrap()),
 		),
 		500,
-	));
-	let want: VersionedMultiAsset = want_asset.into();
+	))
+	.into();
 
 	ParaD::execute_with(|| {
 		use xcm_executor::traits::Convert;
@@ -1938,15 +1937,15 @@ fn transfer_and_swap_should_send_remote_and_deposit_to_third_chain_with_third_ch
 fn transfer_and_swap_should_send_remote_swap_and_deposit_to_third_chain_with_swap_chain_reserve() {
 	TestNet::reset();
 
-	let want_asset = MultiAsset::from((
+	let want: VersionedMultiAsset = MultiAsset::from((
 		(
 			Parent,
 			Parachain(2),
 			Junction::from(BoundedVec::try_from(b"B1".to_vec()).unwrap()),
 		),
 		500,
-	));
-	let want: VersionedMultiAsset = want_asset.into();
+	))
+	.into();
 
 	ParaA::execute_with(|| {
 		assert_ok!(ParaTokens::deposit(CurrencyId::A, &ALICE, 1000));
@@ -1973,15 +1972,15 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_third_chain_with_swa
 fn transfer_and_swap_should_send_remote_swap_and_deposit_to_third_chain_with_other_chain_reserve() {
 	TestNet::reset();
 
-	let want_asset = MultiAsset::from((
+	let want: VersionedMultiAsset = MultiAsset::from((
 		(
 			Parent,
 			Parachain(3),
 			Junction::from(BoundedVec::try_from(b"C".to_vec()).unwrap()),
 		),
 		500,
-	));
-	let want: VersionedMultiAsset = want_asset.into();
+	))
+	.into();
 
 	ParaC::execute_with(|| {
 		use xcm_executor::traits::Convert;
