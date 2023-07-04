@@ -2055,6 +2055,43 @@ fn transfer_and_swap_should_fail_when_dest_is_invalid_location() {
 	});
 }
 
+#[test]
+fn transfer_and_swap_should_fail_when_zero_amount_sent() {
+	TestNet::reset();
+
+	let want: VersionedMultiAsset = MultiAsset::from((
+		(
+			Parent,
+			Parachain(2),
+			Junction::from(BoundedVec::try_from(b"B".to_vec()).unwrap()),
+		),
+		100,
+	))
+	.into();
+
+	ParaA::execute_with(|| {
+		assert_ok!(ParaTokens::deposit(CurrencyId::A, &ALICE, 1000));
+
+		assert_noop!(
+			ParaXTokens::transfer_and_swap(
+				Some(ALICE).into(),
+				CurrencyId::A,
+				0,
+				Box::new(bob_on_parachain(2)),
+				WeightLimit::Limited(50.into()),
+				Box::new(want),
+				Box::new(swap_chain()),
+				true,
+			),
+			Error::<para::Runtime>::ZeroAmount
+		);
+	});
+
+	ParaB::execute_with(|| {
+		assert_eq!(ParaTokens::free_balance(CurrencyId::B, &BOB), 0);
+	});
+}
+
 // TODO: add test for transfer_and_swap transfers the things
 // TODO: add test for supporting swap of relay currency (R)
 // TODO: transfer and swap to invalid chain fails

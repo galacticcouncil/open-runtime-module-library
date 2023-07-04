@@ -403,6 +403,8 @@ pub mod module {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
+			ensure!(!amount.is_zero(), Error::<T>::ZeroAmount);
+
 			let dest: MultiLocation = (*dest).try_into().map_err(|()| Error::<T>::BadVersion)?;
 			let swap_chain: MultiLocation = (*swap_chain).try_into().map_err(|()| Error::<T>::BadVersion)?;
 			let want: MultiAsset = (*want).try_into().map_err(|()| Error::<T>::BadVersion)?;
