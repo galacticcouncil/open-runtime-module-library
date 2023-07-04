@@ -2009,6 +2009,52 @@ fn transfer_and_swap_should_send_remote_swap_and_deposit_to_third_chain_with_oth
 	});
 }
 
+#[test]
+fn transfer_and_swap_should_fail_when_dest_is_invalid_location() {
+	TestNet::reset();
+
+	let want: VersionedMultiAsset = MultiAsset::from((
+		(
+			Parent,
+			Parachain(2),
+			Junction::from(BoundedVec::try_from(b"B".to_vec()).unwrap()),
+		),
+		100,
+	))
+	.into();
+
+	let dest: VersionedMultiLocation = MultiLocation::new(
+		0,
+		X1(Junction::AccountId32 {
+			network: None,
+			id: BOB.into(),
+		}),
+	)
+	.into();
+
+	ParaA::execute_with(|| {
+		assert_ok!(ParaTokens::deposit(CurrencyId::A, &ALICE, 1000));
+
+		assert_noop!(
+			ParaXTokens::transfer_and_swap(
+				Some(ALICE).into(),
+				CurrencyId::A,
+				500,
+				Box::new(dest),
+				WeightLimit::Limited(50.into()),
+				Box::new(want),
+				Box::new(swap_chain()),
+				true,
+			),
+			Error::<para::Runtime>::InvalidDest
+		);
+	});
+
+	ParaB::execute_with(|| {
+		assert_eq!(ParaTokens::free_balance(CurrencyId::B, &BOB), 0);
+	});
+}
+
 // TODO: add test for transfer_and_swap transfers the things
 // TODO: add test for supporting swap of relay currency (R)
 // TODO: transfer and swap to invalid chain fails
