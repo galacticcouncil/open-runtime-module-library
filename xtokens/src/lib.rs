@@ -418,7 +418,9 @@ pub mod module {
 				_ => Err(Error::<T>::InvalidAsset),
 			}?;
 			let ancestry = T::UniversalLocation::get();
-			let want = want.reanchored(&swap_chain, ancestry).expect("should reanchor give"); //TODO: error handling
+			let want = want
+				.reanchored(&swap_chain, ancestry)
+				.map_err(|_| Error::<T>::CannotReanchor)?;
 
 			let (dest, recipient) = Self::ensure_valid_dest(&dest)?;
 
@@ -427,7 +429,10 @@ pub mod module {
 
 			let give: MultiAsset = MultiAsset::from((location, amount.into()));
 			let assets: MultiAssets = give.clone().into();
-			let give = give.reanchored(&swap_chain, ancestry).expect("should reanchor give"); //TODO: error handling
+			let give = give
+				.reanchored(&swap_chain, ancestry)
+				.map_err(|_| Error::<T>::CannotReanchor)?;
+
 			let fee = give.clone();
 			let give: MultiAssetFilter = give.clone().into();
 
@@ -435,10 +440,11 @@ pub mod module {
 
 			let origin_chain = MultiLocation::here()
 				.reanchored(&swap_chain, ancestry)
-				.expect("should reanchor here"); //TODO: error handling
+				.map_err(|_| Error::<T>::CannotReanchor)?;
 
 			let weight_limit = swap_chain_weight_limit.clone(); //TODO: consider defining custom weight limit for different chains
-													// executed on swap_chain
+
+			// executed on swap_chain
 			let xcm = Xcm(vec![
 				Self::buy_execution(fee, &swap_chain, swap_chain_weight_limit)?,
 				ExchangeAsset {
@@ -454,7 +460,8 @@ pub mod module {
 						let fees = want
 							.clone()
 							.reanchored(&origin_chain, swap_chain.interior)
-							.expect("should reanchor here"); //TODO: error handling
+							.map_err(|_| Error::<T>::CannotReanchor)?;
+
 						InitiateReserveWithdraw {
 							assets: want.into(),
 							reserve,
@@ -472,7 +479,7 @@ pub mod module {
 						let fees = want
 							.clone()
 							.reanchored(&origin_chain, swap_chain.interior)
-							.expect("should reanchor here"); //TODO: error handling
+							.map_err(|_| Error::<T>::CannotReanchor)?;
 
 						DepositReserveAsset {
 							assets: want.clone().into(),
@@ -491,11 +498,11 @@ pub mod module {
 						let reserve_fees = fees
 							.clone()
 							.reanchored(&want_reserve, swap_chain.interior)
-							.expect("should reanchor here"); //TODO: error handling
+							.map_err(|_| Error::<T>::CannotReanchor)?;
 						let fees = fees
 							.clone()
 							.reanchored(&dest, want_reserve.interior)
-							.expect("should reanchor here"); //TODO: error handling
+							.map_err(|_| Error::<T>::CannotReanchor)?;
 						let assets = MultiAssetFilter::from((want.id, WildFungibility::Fungible));
 						InitiateReserveWithdraw {
 							assets,
@@ -522,7 +529,7 @@ pub mod module {
 						let fees = want
 							.clone()
 							.reanchored(&dest, swap_chain.interior)
-							.expect("should reanchor here"); //TODO: error handling
+							.map_err(|_| Error::<T>::CannotReanchor)?;
 						InitiateReserveWithdraw {
 							assets: want.into(),
 							reserve,
@@ -540,7 +547,7 @@ pub mod module {
 						let fees = want
 							.clone()
 							.reanchored(&dest, swap_chain.interior)
-							.expect("should reanchor here"); //TODO: error handling
+							.map_err(|_| Error::<T>::CannotReanchor)?;
 
 						DepositReserveAsset {
 							assets: want.clone().into(),
@@ -560,11 +567,11 @@ pub mod module {
 						let reserve_fees = fees
 							.clone()
 							.reanchored(&want_reserve, swap_chain.interior)
-							.expect("should reanchor here"); //TODO: error handling
+							.map_err(|_| Error::<T>::CannotReanchor)?;
 						let fees = fees
 							.clone()
 							.reanchored(&dest, want_reserve.interior)
-							.expect("should reanchor here"); //TODO: error handling
+							.map_err(|_| Error::<T>::CannotReanchor)?;
 						let assets = MultiAssetFilter::from((want.id, WildFungibility::Fungible));
 						InitiateReserveWithdraw {
 							assets,
