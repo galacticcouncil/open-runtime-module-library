@@ -409,6 +409,11 @@ pub mod module {
 			let swap_chain: MultiLocation = (*swap_chain).try_into().map_err(|()| Error::<T>::BadVersion)?;
 			let want: MultiAsset = (*want).try_into().map_err(|()| Error::<T>::BadVersion)?;
 
+			ensure!(
+				T::MultiLocationsFilter::contains(&dest),
+				Error::<T>::NotSupportedMultiLocation
+			);
+
 			let want_reserve = match want.id {
 				Concrete(loc) => match loc {
 					MultiLocation {
