@@ -436,7 +436,7 @@ pub mod module {
 			let fee = give.clone();
 			let give: MultiAssetFilter = give.clone().into();
 
-			let max_assets = assets.len() as u32 + 1; //TODO: Use checked math or so
+			let max_assets = (assets.len() as u32).saturating_add(1);
 
 			let origin_chain = MultiLocation::here()
 				.reanchored(&swap_chain, ancestry)
@@ -493,7 +493,7 @@ pub mod module {
 						let Fungible(fee_amount) = want.fun else {
 							return Err(Error::<T>::InvalidAsset.into())
 						};
-						let fees: MultiAsset = (want.id, fee_amount / 2).into(); // TODO: use proper math
+						let fees: MultiAsset = (want.id, fee_amount.saturating_div(2)).into();
 
 						let reserve_fees = fees
 							.clone()
