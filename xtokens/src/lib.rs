@@ -418,7 +418,7 @@ pub mod module {
 				Concrete(loc) => match loc {
 					MultiLocation {
 						parents: 1,
-						interior: X2(parachain, j),
+						interior: X2(parachain, _),
 					} => Ok(MultiLocation::new(1, parachain)),
 					_ => Err(Error::<T>::InvalidAsset),
 				},

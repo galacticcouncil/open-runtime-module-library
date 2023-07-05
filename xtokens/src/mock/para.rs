@@ -1,5 +1,3 @@
-use core::cell::RefCell;
-
 use super::{Amount, Balance, CurrencyId, CurrencyIdConvert, ParachainXcmRouter};
 use crate as orml_xtokens;
 
@@ -15,7 +13,6 @@ use sp_runtime::{
 	traits::{Convert, IdentityLookup},
 	AccountId32,
 };
-use sp_std::collections::btree_map::BTreeMap;
 
 use cumulus_primitives_core::{ChannelStatus, GetChannelInfo, ParaId};
 use pallet_xcm::XcmPassthrough;
@@ -26,7 +23,7 @@ use xcm_builder::{
 	ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative, SiblingParachainConvertsVia,
 	SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit,
 };
-use xcm_executor::{Config, XcmExecutor, traits::AssetExchange, Assets};
+use xcm_executor::{traits::AssetExchange, Assets, Config, XcmExecutor};
 
 use crate::mock::AllTokensAreCreatedEqualToWeight;
 use orml_traits::{location::AbsoluteReserveProvider, parameter_type_with_key};
@@ -146,11 +143,11 @@ parameter_types! {
 pub struct MockExchanger;
 impl AssetExchange for MockExchanger {
 	fn exchange_asset(
-			origin: Option<&MultiLocation>,
-			give: Assets,
-			want: &MultiAssets,
-			maximal: bool,
-		) -> Result<Assets, Assets> {
+		_origin: Option<&MultiLocation>,
+		_give: Assets,
+		want: &MultiAssets,
+		_maximal: bool,
+	) -> Result<Assets, Assets> {
 		Ok(want.clone().into())
 	}
 }
