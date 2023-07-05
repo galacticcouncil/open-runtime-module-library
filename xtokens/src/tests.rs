@@ -2162,6 +2162,49 @@ fn transfer_and_swap_should_fail_when_sent_to_unsupported_location() {
 	});
 }
 
+#[ignore] //TODO: add support for relay tokens
+#[test]
+fn transfer_and_swap_relay_asset_should_work_when_dest_is_swap_chain_works() {
+	TestNet::reset();
+
+	let want: VersionedMultiAsset = MultiAsset::from((
+		(
+			Parent,
+			Parachain(2),
+			Junction::from(BoundedVec::try_from(b"B".to_vec()).unwrap()),
+		),
+		100,
+	))
+	.into();
+
+	Relay::execute_with(|| {
+		let _ = RelayBalances::deposit_creating(&para_a_account(), 1000);
+	});
+
+	ParaA::execute_with(|| {
+		assert_ok!(ParaTokens::deposit(CurrencyId::A, &ALICE, 1000));
+
+		assert_ok!(ParaXTokens::transfer_and_swap(
+			Some(ALICE).into(),
+			CurrencyId::R,
+			500,
+			Box::new(bob_on_parachain(2)),
+			WeightLimit::Limited(50.into()),
+			Box::new(want),
+			Box::new(swap_chain()),
+			true,
+		));
+	});
+
+	// Relay::execute_with(|| {
+	// 	assert_eq!(RelayBalances::free_balance(&para_a_account()), 500);
+	// 	assert_eq!(RelayBalances::free_balance(&para_d_account()), 460);
+	// });
+
+	ParaB::execute_with(|| {
+		assert_eq!(ParaRelativeTokens::free_balance(CurrencyId::R, &BOB), 420);
+	});
+}
+
 // TODO: add test for transfer_and_swap transfers the things
 // TODO: add test for supporting swap of relay currency (R)
-// TODO: transfer and swap to invalid chain fails
