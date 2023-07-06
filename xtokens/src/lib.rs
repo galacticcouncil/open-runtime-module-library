@@ -505,7 +505,7 @@ pub mod module {
 							.reanchored(&origin_chain, swap_chain.interior)
 							.map_err(|_| Error::<T>::CannotReanchor)?;
 
-						  {
+						DepositReserveAsset {
 							assets: want.clone().into(),
 							dest: origin_chain,
 							xcm: Xcm(vec![
