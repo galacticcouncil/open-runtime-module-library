@@ -441,12 +441,16 @@ pub mod module {
 				.reanchored(&swap_chain, ancestry)
 				.map_err(|_| Error::<T>::CannotReanchor)?;
 
+			let origin_chain = MultiLocation::here()
+				.reanchored(&swap_chain, ancestry)
+				.map_err(|_| Error::<T>::CannotReanchor)?;
+
 			let (dest, recipient) = Self::ensure_valid_dest(&dest)?;
 
-			let location: MultiLocation = T::CurrencyIdConvert::convert(currency_id.clone())
+			let give_location: MultiLocation = T::CurrencyIdConvert::convert(currency_id.clone())
 				.ok_or(Error::<T>::NotCrossChainTransferableCurrency)?;
 
-			let give: MultiAsset = MultiAsset::from((location, amount.into()));
+			let give: MultiAsset = MultiAsset::from((give_location, amount.into()));
 			let assets: MultiAssets = give.clone().into();
 			let give = give
 				.reanchored(&swap_chain, ancestry)
@@ -456,10 +460,6 @@ pub mod module {
 			let give: MultiAssetFilter = give.clone().into();
 
 			let max_assets = (assets.len() as u32).saturating_add(1);
-
-			let origin_chain = MultiLocation::here()
-				.reanchored(&swap_chain, ancestry)
-				.map_err(|_| Error::<T>::CannotReanchor)?;
 
 			let weight_limit = swap_chain_weight_limit.clone(); //TODO: consider defining custom weight limit for different chains
 
