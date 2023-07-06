@@ -591,7 +591,7 @@ pub mod module {
 						let Fungible(fee_amount) = want.fun else {
 							return Err(Error::<T>::InvalidAsset.into())
 						};
-						let fees: MultiAsset = (want.id, fee_amount / 2).into(); // TODO: use proper math
+						let fees: MultiAsset = (want.id, fee_amount.saturating_div(2)).into();
 
 						let reserve_fees = fees
 							.clone()
