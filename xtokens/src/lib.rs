@@ -424,6 +424,18 @@ pub mod module {
 				},
 				_ => Err(Error::<T>::InvalidAsset),
 			}?;
+
+			//TODO: temp code, extrat it to function or modify the existing transfer_kind method as that has cross chain validaiton
+			let self_location = T::SelfLocation::get();
+			let reserve = T::ReserveProvider::reserve(&want).ok_or(Error::<T>::AssetHasNoReserve)?;
+			let transfer_kind = if reserve == self_location {
+				SelfReserveAsset
+			} else if reserve == dest {
+				ToReserve
+			} else {
+				ToNonReserve
+			};
+
 			let ancestry = T::UniversalLocation::get();
 			let want = want
 				.reanchored(&swap_chain, ancestry)
@@ -462,9 +474,11 @@ pub mod module {
 					maximal,
 				},
 				if dest == swap_chain {
+					//ToNonReserve
 					Self::deposit_asset(recipient, max_assets)
 				} else if dest == origin_chain {
 					if want_reserve == origin_chain {
+						//SelfReserveAsset
 						let reserve = origin_chain;
 						let fees = want
 							.clone()
@@ -485,12 +499,13 @@ pub mod module {
 							]),
 						}
 					} else if want_reserve == swap_chain {
+						//ToNonReserve
 						let fees = want
 							.clone()
 							.reanchored(&origin_chain, swap_chain.interior)
 							.map_err(|_| Error::<T>::CannotReanchor)?;
 
-						DepositReserveAsset {
+						  {
 							assets: want.clone().into(),
 							dest: origin_chain,
 							xcm: Xcm(vec![
@@ -499,6 +514,7 @@ pub mod module {
 							]),
 						}
 					} else {
+						//ToNonReserve
 						let Fungible(fee_amount) = want.fun else {
 							return Err(Error::<T>::InvalidAsset.into())
 						};
@@ -534,11 +550,13 @@ pub mod module {
 					}
 				} else {
 					if want_reserve == dest {
+						//ToReserve
 						let reserve = dest;
 						let fees = want
 							.clone()
 							.reanchored(&dest, swap_chain.interior)
 							.map_err(|_| Error::<T>::CannotReanchor)?;
+
 						InitiateReserveWithdraw {
 							assets: want.into(),
 							reserve,
@@ -552,6 +570,7 @@ pub mod module {
 							]),
 						}
 					} else if want_reserve == swap_chain {
+						//ToNonReserve
 						//TODO: remove duplication as this part is duplicated from the case when we send back swap chain reserve to origin chain
 						let fees = want
 							.clone()
@@ -567,6 +586,7 @@ pub mod module {
 							]),
 						}
 					} else {
+						//ToNonReserve
 						//TODO: remove duplication
 						let Fungible(fee_amount) = want.fun else {
 							return Err(Error::<T>::InvalidAsset.into())
