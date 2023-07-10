@@ -2162,9 +2162,8 @@ fn transfer_and_swap_should_fail_when_sent_to_unsupported_location() {
 	});
 }
 
-#[ignore] //TODO: add support for relay tokens
 #[test]
-fn transfer_and_swap_relay_asset_should_work_when_dest_is_swap_chain_works() {
+fn transfer_and_swap_relay_asset_should_work_when_dest_is_swap_chain() {
 	TestNet::reset();
 
 	let want: VersionedMultiAsset = MultiAsset::from((
@@ -2182,7 +2181,7 @@ fn transfer_and_swap_relay_asset_should_work_when_dest_is_swap_chain_works() {
 	});
 
 	ParaA::execute_with(|| {
-		assert_ok!(ParaTokens::deposit(CurrencyId::A, &ALICE, 1000));
+		//assert_ok!(ParaTokens::deposit(CurrencyId::A, &ALICE, 1000));
 
 		assert_ok!(ParaXTokens::transfer_and_swap(
 			Some(ALICE).into(),
@@ -2196,14 +2195,18 @@ fn transfer_and_swap_relay_asset_should_work_when_dest_is_swap_chain_works() {
 		));
 	});
 
-	// Relay::execute_with(|| {
-	// 	assert_eq!(RelayBalances::free_balance(&para_a_account()), 500);
-	// 	assert_eq!(RelayBalances::free_balance(&para_d_account()), 460);
-	// });
+	Relay::execute_with(|| {
+		assert_eq!(RelayBalances::free_balance(&para_a_account()), 500);
+		assert_eq!(RelayBalances::free_balance(&para_b_account()), 460);
+	});
 
 	ParaB::execute_with(|| {
-		assert_eq!(ParaRelativeTokens::free_balance(CurrencyId::R, &BOB), 420);
+		assert_eq!(ParaTokens::free_balance(CurrencyId::B, &BOB), 100);
 	});
+
+	/*ParaB::execute_with(|| {
+		assert_eq!(ParaRelativeTokens::free_balance(CurrencyId::B, &BOB), 420);
+	});*/
 }
 
 // TODO: add test for transfer_and_swap transfers the things

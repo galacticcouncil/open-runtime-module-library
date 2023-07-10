@@ -425,17 +425,6 @@ pub mod module {
 				_ => Err(Error::<T>::InvalidAsset),
 			}?;
 
-			//TODO: temp code, extrat it to function or modify the existing transfer_kind method as that has cross chain validaiton
-			let self_location = T::SelfLocation::get();
-			let reserve = T::ReserveProvider::reserve(&want).ok_or(Error::<T>::AssetHasNoReserve)?;
-			let transfer_kind = if reserve == self_location {
-				SelfReserveAsset
-			} else if reserve == dest {
-				ToReserve
-			} else {
-				ToNonReserve
-			};
-
 			let ancestry = T::UniversalLocation::get();
 			let want = want
 				.reanchored(&swap_chain, ancestry)
@@ -452,12 +441,22 @@ pub mod module {
 
 			let give: MultiAsset = MultiAsset::from((give_location, amount.into()));
 			let assets: MultiAssets = give.clone().into();
-			let give = give
+			let give_asset = give
 				.reanchored(&swap_chain, ancestry)
 				.map_err(|_| Error::<T>::CannotReanchor)?;
 
-			let fee = give.clone();
-			let give: MultiAssetFilter = give.clone().into();
+			let self_location = T::SelfLocation::get();
+			let reserve = T::ReserveProvider::reserve(&give_asset).ok_or(Error::<T>::AssetHasNoReserve)?;
+			let transfer_kind_for_give = if reserve == self_location {
+				SelfReserveAsset
+			} else if reserve == dest {
+				ToReserve
+			} else {
+				ToNonReserve
+			};
+
+			let fee = give_asset.clone();
+			let give: MultiAssetFilter = give_asset.clone().into();
 
 			let max_assets = (assets.len() as u32).saturating_add(1);
 
@@ -467,7 +466,7 @@ pub mod module {
 
 			// executed on swap_chain
 			let xcm = Xcm(vec![
-				Self::buy_execution(fee, &swap_chain, swap_chain_weight_limit)?,
+				Self::buy_execution(half(&fee), &swap_chain, swap_chain_weight_limit.clone())?,
 				ExchangeAsset {
 					give,
 					want: want.clone().into(),
@@ -518,7 +517,7 @@ pub mod module {
 						let Fungible(fee_amount) = want.fun else {
 							return Err(Error::<T>::InvalidAsset.into())
 						};
-						let fees: MultiAsset = (want.id, fee_amount.saturating_div(2)).into();
+						let fees: MultiAsset = (want.id, fee_amount.saturating_div(2)).into(); //TODO: use half()
 
 						let reserve_fees = fees
 							.clone()
@@ -591,7 +590,7 @@ pub mod module {
 						let Fungible(fee_amount) = want.fun else {
 							return Err(Error::<T>::InvalidAsset.into())
 						};
-						let fees: MultiAsset = (want.id, fee_amount.saturating_div(2)).into();
+						let fees: MultiAsset = (want.id, fee_amount.saturating_div(2)).into(); //TODO: use half method
 
 						let reserve_fees = fees
 							.clone()
@@ -623,14 +622,52 @@ pub mod module {
 					}
 				},
 			]);
+
+			let mut messages = match transfer_kind_for_give {
+				SelfReserveAsset => {vec![
+					TransferReserveAsset {
+						assets,
+						dest: swap_chain,
+						xcm,
+					},
+				]}
+				ToReserve => { todo!()}
+				ToNonReserve => {
+					//TODO: duplication, extract to function
+					let mut reanchored_dest = dest;
+					if reserve == MultiLocation::parent() {
+						match dest {
+							MultiLocation {
+								parents,
+								interior: X1(Parachain(id)),
+							} if parents == 1 => {
+								reanchored_dest = Parachain(id).into();
+							}
+							_ => {}
+						}
+					}
+
+					vec![
+					WithdrawAsset(assets),
+					InitiateReserveWithdraw {
+						assets: All.into(),
+						reserve,
+						xcm: Xcm(vec![
+							Self::buy_execution(half(&give_asset), &reserve, swap_chain_weight_limit.clone())?,
+							DepositReserveAsset {
+								assets: AllCounted(max_assets).into(),
+								dest: reanchored_dest,
+								xcm,
+							},
+						]),
+					},
+				]}
+			};
+
+
+
 			// executed on origin_chain
-			let mut msg = Xcm(vec![
-				TransferReserveAsset {
-					assets,
-					dest: swap_chain,
-					xcm,
-				}, // TODO: support assets where origin_chain is not reserve
-			]);
+			let mut msg = Xcm(messages);
 
 			let hash = msg.using_encoded(sp_io::hashing::blake2_256);
 			let origin_location = T::AccountIdToMultiLocation::convert(who.clone());
