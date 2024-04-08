@@ -4,15 +4,9 @@ use sp_runtime::{
 	traits::{Convert, MaybeSerializeDeserialize, SaturatedConversion},
 	DispatchError,
 };
-use sp_std::{
-	cmp::{Eq, PartialEq},
-	fmt::Debug,
-	marker::PhantomData,
-	prelude::*,
-	result,
-};
+use sp_std::{fmt::Debug, marker::PhantomData, prelude::*, result};
 
-use xcm::v3::{prelude::*, Error as XcmError, MultiAsset, MultiLocation, Result};
+use xcm::v3::{prelude::*, Error as XcmError, Result};
 use xcm_executor::{
 	traits::{ConvertLocation, MatchesFungible, TransactAsset},
 	Assets,
