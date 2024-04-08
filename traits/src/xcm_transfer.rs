@@ -1,5 +1,4 @@
 use sp_runtime::DispatchError;
-use sp_std::vec::Vec;
 use xcm::{v3::prelude::*, VersionedMultiAsset, VersionedMultiAssets, VersionedMultiLocation};
 pub struct Transferred<AccountId> {
 	pub sender: AccountId,
