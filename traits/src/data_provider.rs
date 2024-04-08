@@ -1,5 +1,4 @@
 use sp_runtime::DispatchResult;
-use sp_std::vec::Vec;
 
 /// Data provider with ability to provide data with no-op, and provide all data.
 pub trait DataFeeder<Key, Value, AccountId> {

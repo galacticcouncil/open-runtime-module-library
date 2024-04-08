@@ -3,10 +3,7 @@
 use codec::{Decode, Encode, MaxEncodedLen};
 use impl_trait_for_tuples::impl_for_tuples;
 use sp_runtime::{DispatchResult, RuntimeDebug};
-use sp_std::{
-	cmp::{Eq, PartialEq},
-	prelude::Vec,
-};
+use sp_std::cmp::{Eq, PartialEq};
 
 pub use asset_registry::{FixedConversionRateProvider, WeightToFeeConverter};
 pub use auction::{Auction, AuctionHandler, AuctionInfo, OnNewBidResult};
