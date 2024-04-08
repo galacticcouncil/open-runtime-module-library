@@ -2,7 +2,6 @@
 
 use frame_support::storage::{with_transaction, TransactionOutcome};
 use sp_runtime::DispatchError;
-use sp_std::result::Result;
 
 pub mod offchain_worker;
 pub mod ordered_set;
