@@ -8,11 +8,7 @@ use sp_runtime::{
 	traits::{AtLeast32BitUnsigned, MaybeSerializeDeserialize},
 	DispatchError, DispatchResult,
 };
-use sp_std::{
-	cmp::{Eq, Ordering, PartialEq},
-	fmt::Debug,
-	result,
-};
+use sp_std::{cmp::Ordering, fmt::Debug, result};
 
 /// Abstraction over a fungible multi-currency system.
 pub trait MultiCurrency<AccountId> {

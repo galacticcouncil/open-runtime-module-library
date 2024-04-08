@@ -19,7 +19,7 @@ use frame_system::{ensure_signed, pallet_prelude::*};
 use orml_traits::{Auction, AuctionHandler, AuctionInfo, Change};
 use sp_runtime::{
 	traits::{AtLeast32BitUnsigned, Bounded, CheckedAdd, MaybeSerializeDeserialize, Member, One, Zero},
-	DispatchError, DispatchResult,
+	DispatchResult,
 };
 
 mod mock;
