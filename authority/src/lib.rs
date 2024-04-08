@@ -26,14 +26,13 @@
 #![allow(clippy::borrowed_box)]
 #![allow(clippy::unused_unit)]
 
-use codec::MaxEncodedLen;
 use frame_support::{
 	dispatch::PostDispatchInfo,
 	dispatch::{DispatchClass, GetDispatchInfo, Pays},
 	pallet_prelude::*,
 	traits::{
 		schedule::{v1::Named as ScheduleNamed, DispatchTime, Priority},
-		EitherOfDiverse, EnsureOrigin, Get, IsType, OriginTrait,
+		EitherOfDiverse, IsType, OriginTrait,
 	},
 };
 use frame_system::{pallet_prelude::*, EnsureRoot, EnsureSigned};
@@ -72,7 +71,7 @@ mod helper {
 	use std::cell::RefCell;
 
 	thread_local! {
-		static NESTED_MAX_ENCODED_LEN: RefCell<bool> = RefCell::new(false);
+		static NESTED_MAX_ENCODED_LEN: RefCell<bool> = const { RefCell::new(false) };
 	}
 
 	pub fn set_nested_max_encoded_len(val: bool) {
