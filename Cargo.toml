@@ -23,6 +23,7 @@ members = [
 	"xcm-support",
 	"xcm",
 	"xtokens",
+	"rate-limit",
 ]
 
 resolver = "2"
