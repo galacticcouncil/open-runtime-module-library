@@ -55,7 +55,6 @@ fn fungibles_mutate_trait_should_work() {
 				DOT,
 				&ALICE,
 				8,
-				Preservation::Expendable,
 				Precision::Exact,
 				Fortitude::Polite
 			),
@@ -725,7 +724,6 @@ fn fungibles_mutate_convert_should_work() {
 				DOT,
 				&BOB,
 				10000,
-				Preservation::Expendable,
 				Precision::Exact,
 				Fortitude::Polite
 			));
