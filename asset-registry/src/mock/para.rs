@@ -10,10 +10,8 @@ use frame_support::{
 	PalletId,
 };
 use frame_system::{EnsureRoot, EnsureSignedBy};
-use orml_traits::{
-	location::{AbsoluteReserveProvider, RelativeReserveProvider},
-	parameter_type_with_key, FixedConversionRateProvider, MultiCurrency,
-};
+use orml_traits::{parameter_type_with_key, FixedConversionRateProvider, MultiCurrency};
+use orml_xtokens::{AbsoluteReserveProvider, RelativeReserveProvider};
 use orml_xcm_support::{IsNativeConcrete, MultiCurrencyAdapter, MultiNativeAsset};
 use pallet_xcm::XcmPassthrough;
 use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};

@@ -3,6 +3,9 @@
 use super::*;
 use crate as orml_xtokens;
 
+use frame_support::{parameter_types, traits::ContainsPair};
+use sp_core::Get;
+use sp_std::marker::PhantomData;
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use sp_io::TestExternalities;
@@ -13,6 +16,7 @@ use xcm_executor::AssetsInHolding;
 
 use xcm_simulator::{decl_test_network, decl_test_parachain, decl_test_relay_chain, ProcessMessageError, TestExt};
 
+pub mod asset_hub;
 pub mod para;
 pub mod para_relative_view;
 pub mod para_teleport;
@@ -22,6 +26,23 @@ pub mod teleport_currency_adapter;
 pub const ALICE: AccountId32 = AccountId32::new([0u8; 32]);
 pub const BOB: AccountId32 = AccountId32::new([1u8; 32]);
 pub const CHARLIE: AccountId32 = AccountId32::new([2u8; 32]);
+
+parameter_types! {
+	pub KsmLocation: Location = Parent.into();
+}
+
+/// Accepts an asset if it is a concrete asset from the system (Relay Chain or system parachain).
+pub struct ConcreteAssetFromSystem<AssetLocation>(PhantomData<AssetLocation>);
+impl<AssetLocation: Get<Location>> ContainsPair<Asset, Location> for ConcreteAssetFromSystem<AssetLocation> {
+	fn contains(asset: &Asset, origin: &Location) -> bool {
+		let is_system = match origin.unpack() {
+			(1, []) => true,
+			(1, [Parachain(id)]) => *id < 2000,
+			_ => false,
+		};
+		asset.id.0 == AssetLocation::get() && is_system
+	}
+}
 
 #[derive(
 	Encode,
@@ -220,6 +241,15 @@ decl_test_parachain! {
 	}
 }
 
+decl_test_parachain! {
+	pub struct AssetHub {
+		Runtime = asset_hub::Runtime,
+		XcmpMessageHandler = asset_hub::MsgQueue,
+		DmpMessageHandler = asset_hub::MsgQueue,
+		new_ext = asset_hub_ext(ASSET_HUB_ID),
+	}
+}
+
 decl_test_relay_chain! {
 	pub struct Relay {
 		Runtime = relay::Runtime,
@@ -236,6 +266,7 @@ decl_test_network! {
 	pub struct TestNet {
 		relay_chain = Relay,
 		parachains = vec![
+			(ASSET_HUB_ID, AssetHub),
 			(1, ParaA),
 			(2, ParaB),
 			(3, ParaC),
@@ -244,9 +275,9 @@ decl_test_network! {
 	}
 }
 
-pub type RelayBalances = pallet_balances::Pallet<relay::Runtime>;
 pub type ParaTokens = orml_tokens::Pallet<para::Runtime>;
 pub type ParaXTokens = orml_xtokens::Pallet<para::Runtime>;
+pub type AssetHubBalances = pallet_balances::Pallet<asset_hub::Runtime>;
 
 pub type ParaRelativeTokens = orml_tokens::Pallet<para_relative_view::Runtime>;
 pub type ParaRelativeXTokens = orml_xtokens::Pallet<para_relative_view::Runtime>;
@@ -288,6 +319,28 @@ pub fn para_teleport_ext(para_id: u32) -> TestExternalities {
 	.unwrap();
 
 	let mut ext = TestExternalities::new(t);
+	ext.execute_with(|| {
+		System::set_block_number(1);
+		MsgQueue::set_para_id(para_id.into());
+	});
+	ext
+}
+
+pub fn asset_hub_ext(para_id: u32) -> sp_io::TestExternalities {
+	use asset_hub::{MsgQueue, Runtime, System};
+
+	let mut t = frame_system::GenesisConfig::<Runtime>::default()
+		.build_storage()
+		.unwrap();
+
+	pallet_balances::GenesisConfig::<Runtime> {
+		balances: vec![(ALICE, 1_000)],
+		..Default::default()
+	}
+	.assimilate_storage(&mut t)
+	.unwrap();
+
+	let mut ext = sp_io::TestExternalities::new(t);
 	ext.execute_with(|| {
 		System::set_block_number(1);
 		MsgQueue::set_para_id(para_id.into());
