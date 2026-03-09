@@ -1,7 +1,6 @@
 #![cfg(test)]
 
 use super::*;
-use cumulus_primitives_core::ParaId;
 use frame_support::{assert_err, assert_noop, assert_ok, traits::Currency};
 use mock::*;
 use orml_traits::{ConcreteFungibleAsset, MultiCurrency};
@@ -10,18 +9,6 @@ use polkadot_parachain_primitives::primitives::Sibling;
 use sp_runtime::{traits::AccountIdConversion, AccountId32};
 use xcm::{v5::OriginKind::SovereignAccount, VersionedXcm};
 use xcm_simulator::TestExt;
-
-fn para_a_account() -> AccountId32 {
-	ParaId::from(1).into_account_truncating()
-}
-
-fn para_b_account() -> AccountId32 {
-	ParaId::from(2).into_account_truncating()
-}
-
-fn para_d_account() -> AccountId32 {
-	ParaId::from(4).into_account_truncating()
-}
 
 fn sibling_a_account() -> AccountId32 {
 	Sibling::from(1).into_account_truncating()
@@ -50,11 +37,11 @@ fn print_events<Runtime: frame_system::Config>(name: &'static str) {
 }
 
 #[test]
-fn send_relay_chain_asset_to_relay_chain() {
+fn send_relay_chain_asset_to_asset_hub() {
 	TestNet::reset();
 
-	Relay::execute_with(|| {
-		let _ = RelayBalances::deposit_creating(&para_a_account(), 1_000);
+	AssetHub::execute_with(|| {
+		let _ = AssetHubBalances::deposit_creating(&sibling_a_account(), 1_000);
 	});
 
 	ParaA::execute_with(|| {
@@ -65,10 +52,13 @@ fn send_relay_chain_asset_to_relay_chain() {
 			Box::new(
 				Location::new(
 					1,
-					[Junction::AccountId32 {
-						network: None,
-						id: BOB.into(),
-					}]
+					[
+						Parachain(ASSET_HUB_ID),
+						Junction::AccountId32 {
+							network: None,
+							id: BOB.into(),
+						}
+					]
 				)
 				.into()
 			),
@@ -77,18 +67,18 @@ fn send_relay_chain_asset_to_relay_chain() {
 		assert_eq!(ParaTokens::free_balance(CurrencyId::R, &ALICE), 500);
 	});
 
-	Relay::execute_with(|| {
-		assert_eq!(RelayBalances::free_balance(&para_a_account()), 500);
-		assert_eq!(RelayBalances::free_balance(&BOB), 450);
+	AssetHub::execute_with(|| {
+		assert_eq!(AssetHubBalances::free_balance(&sibling_a_account()), 500);
+		assert_eq!(AssetHubBalances::free_balance(&BOB), 450);
 	});
 }
 
 #[test]
-fn send_relay_chain_asset_to_relay_chain_with_fee() {
+fn send_relay_chain_asset_to_asset_hub_with_fee() {
 	TestNet::reset();
 
-	Relay::execute_with(|| {
-		let _ = RelayBalances::deposit_creating(&para_a_account(), 1_000);
+	AssetHub::execute_with(|| {
+		let _ = AssetHubBalances::deposit_creating(&sibling_a_account(), 1_000);
 	});
 
 	ParaA::execute_with(|| {
@@ -100,10 +90,13 @@ fn send_relay_chain_asset_to_relay_chain_with_fee() {
 			Box::new(
 				Location::new(
 					1,
-					[Junction::AccountId32 {
-						network: None,
-						id: BOB.into(),
-					}]
+					[
+						Parachain(ASSET_HUB_ID),
+						Junction::AccountId32 {
+							network: None,
+							id: BOB.into(),
+						}
+					]
 				)
 				.into()
 			),
@@ -113,9 +106,9 @@ fn send_relay_chain_asset_to_relay_chain_with_fee() {
 	});
 
 	// It should use 50 for weight, so 450 should reach destination
-	Relay::execute_with(|| {
-		assert_eq!(RelayBalances::free_balance(&para_a_account()), 500);
-		assert_eq!(RelayBalances::free_balance(&BOB), 450);
+	AssetHub::execute_with(|| {
+		assert_eq!(AssetHubBalances::free_balance(&sibling_a_account()), 500);
+		assert_eq!(AssetHubBalances::free_balance(&BOB), 450);
 	});
 }
 
@@ -154,8 +147,8 @@ fn cannot_lost_fund_on_send_failed() {
 fn send_relay_chain_asset_to_sibling() {
 	TestNet::reset();
 
-	Relay::execute_with(|| {
-		let _ = RelayBalances::deposit_creating(&para_a_account(), 1000);
+	AssetHub::execute_with(|| {
+		let _ = AssetHubBalances::deposit_creating(&sibling_a_account(), 1000);
 	});
 
 	ParaA::execute_with(|| {
@@ -181,9 +174,9 @@ fn send_relay_chain_asset_to_sibling() {
 		assert_eq!(ParaTokens::free_balance(CurrencyId::R, &ALICE), 500);
 	});
 
-	Relay::execute_with(|| {
-		assert_eq!(RelayBalances::free_balance(&para_a_account()), 500);
-		assert_eq!(RelayBalances::free_balance(&para_b_account()), 450);
+	AssetHub::execute_with(|| {
+		assert_eq!(AssetHubBalances::free_balance(&sibling_a_account()), 500);
+		assert_eq!(AssetHubBalances::free_balance(&sibling_b_account()), 450);
 	});
 
 	ParaB::execute_with(|| {
@@ -195,8 +188,8 @@ fn send_relay_chain_asset_to_sibling() {
 fn send_relay_chain_asset_to_sibling_with_fee() {
 	TestNet::reset();
 
-	Relay::execute_with(|| {
-		let _ = RelayBalances::deposit_creating(&para_a_account(), 1000);
+	AssetHub::execute_with(|| {
+		let _ = AssetHubBalances::deposit_creating(&sibling_a_account(), 1000);
 	});
 
 	ParaA::execute_with(|| {
@@ -224,9 +217,9 @@ fn send_relay_chain_asset_to_sibling_with_fee() {
 	});
 
 	// It should use 50 weight
-	Relay::execute_with(|| {
-		assert_eq!(RelayBalances::free_balance(&para_a_account()), 500);
-		assert_eq!(RelayBalances::free_balance(&para_b_account()), 450);
+	AssetHub::execute_with(|| {
+		assert_eq!(AssetHubBalances::free_balance(&sibling_a_account()), 500);
+		assert_eq!(AssetHubBalances::free_balance(&sibling_b_account()), 450);
 	});
 
 	// It should use another 50 weight in paraB
@@ -656,10 +649,13 @@ fn sending_sibling_asset_to_reserve_sibling_with_relay_fee_works() {
 
 	ParaC::execute_with(|| {
 		assert_ok!(ParaTeleportTokens::deposit(CurrencyId::C, &sibling_a_account(), 1_000));
+		// ParaC might process the message before AssetHub teleports the asset to ParaC.
+		// This is why sibling_a_account needs to have R asset available.
+		assert_ok!(ParaTeleportTokens::deposit(CurrencyId::R, &sibling_a_account(), 1_000));
 	});
 
-	Relay::execute_with(|| {
-		let _ = RelayBalances::deposit_creating(&para_a_account(), 1_000);
+	AssetHub::execute_with(|| {
+		let _ = AssetHubBalances::deposit_creating(&sibling_a_account(), 1_000);
 	});
 
 	let fee_amount: u128 = 300;
@@ -688,16 +684,16 @@ fn sending_sibling_asset_to_reserve_sibling_with_relay_fee_works() {
 		assert_eq!(1000 - fee_amount, ParaTokens::free_balance(CurrencyId::R, &ALICE));
 	});
 
-	Relay::execute_with(|| {
+	AssetHub::execute_with(|| {
 		assert_eq!(
 			1000 - (fee_amount - dest_weight),
-			RelayBalances::free_balance(&para_a_account())
+			AssetHubBalances::free_balance(&sibling_a_account())
 		);
 	});
 
 	ParaC::execute_with(|| {
 		assert_eq!(
-			fee_amount - dest_weight * 4,
+			1000 + fee_amount - dest_weight * 4,
 			ParaTeleportTokens::free_balance(CurrencyId::R, &sibling_a_account())
 		);
 
@@ -716,10 +712,13 @@ fn sending_sibling_asset_to_reserve_sibling_with_relay_fee_works_with_relative_s
 
 	ParaC::execute_with(|| {
 		assert_ok!(ParaTeleportTokens::deposit(CurrencyId::C, &sibling_d_account(), 1_000));
+		// ParaC might process the message before AssetHub teleports the asset to ParaC.
+		// This is why sibling_d_account needs to have R asset available.
+		assert_ok!(ParaTeleportTokens::deposit(CurrencyId::R, &sibling_d_account(), 1_000));
 	});
 
-	Relay::execute_with(|| {
-		let _ = RelayBalances::deposit_creating(&para_d_account(), 1_000);
+	AssetHub::execute_with(|| {
+		let _ = AssetHubBalances::deposit_creating(&sibling_d_account(), 1_000);
 	});
 
 	let fee_amount: u128 = 300;
@@ -751,16 +750,16 @@ fn sending_sibling_asset_to_reserve_sibling_with_relay_fee_works_with_relative_s
 		);
 	});
 
-	Relay::execute_with(|| {
+	AssetHub::execute_with(|| {
 		assert_eq!(
 			1000 - (fee_amount - dest_weight),
-			RelayBalances::free_balance(&para_d_account())
+			AssetHubBalances::free_balance(&sibling_d_account())
 		);
 	});
 
 	ParaC::execute_with(|| {
 		assert_eq!(
-			fee_amount - dest_weight * 4,
+			1000 + fee_amount - dest_weight * 4,
 			ParaTeleportTokens::free_balance(CurrencyId::R, &sibling_d_account())
 		);
 
@@ -781,8 +780,8 @@ fn sending_sibling_asset_to_reserve_sibling_with_relay_fee_not_enough() {
 		assert_ok!(ParaTokens::deposit(CurrencyId::C, &sibling_a_account(), 1_000));
 	});
 
-	Relay::execute_with(|| {
-		let _ = RelayBalances::deposit_creating(&para_a_account(), 1_000);
+	AssetHub::execute_with(|| {
+		let _ = AssetHubBalances::deposit_creating(&sibling_a_account(), 1_000);
 	});
 
 	let fee_amount: u128 = 159;
@@ -811,10 +810,10 @@ fn sending_sibling_asset_to_reserve_sibling_with_relay_fee_not_enough() {
 		assert_eq!(1000 - fee_amount, ParaTokens::free_balance(CurrencyId::R, &ALICE));
 	});
 
-	Relay::execute_with(|| {
+	AssetHub::execute_with(|| {
 		assert_eq!(
 			1000 - (fee_amount - dest_weight),
-			RelayBalances::free_balance(&para_a_account())
+			AssetHubBalances::free_balance(&sibling_a_account())
 		);
 	});
 
@@ -1018,18 +1017,18 @@ fn transfer_to_invalid_dest_fails() {
 fn send_as_sovereign() {
 	TestNet::reset();
 
-	Relay::execute_with(|| {
-		let _ = RelayBalances::deposit_creating(&para_a_account(), 1_000_000_000_000);
+	AssetHub::execute_with(|| {
+		let _ = AssetHubBalances::deposit_creating(&sibling_a_account(), 1_000_000_000_000);
 	});
 
 	ParaA::execute_with(|| {
 		let call = relay::RuntimeCall::System(frame_system::Call::<relay::Runtime>::remark_with_event {
 			remark: vec![1, 1, 1],
 		});
-		let assets: Asset = (Here, 1_000_000_000_000u128).into();
+		let assets: Asset = (Parent, 1_000_000_000_000u128).into();
 		assert_ok!(para::OrmlXcm::send_as_sovereign(
 			para::RuntimeOrigin::root(),
-			Box::new(Parent.into()),
+			Box::new(VersionedLocation::from(Location::new(1, [Parachain(ASSET_HUB_ID)]))),
 			Box::new(VersionedXcm::from(Xcm(vec![
 				WithdrawAsset(assets.clone().into()),
 				BuyExecution {
@@ -1045,11 +1044,14 @@ fn send_as_sovereign() {
 		));
 	});
 
-	Relay::execute_with(|| {
-		assert!(relay::System::events().iter().any(|r| {
+	AssetHub::execute_with(|| {
+		assert!(asset_hub::System::events().iter().any(|r| {
 			matches!(
 				r.event,
-				relay::RuntimeEvent::System(frame_system::Event::<relay::Runtime>::Remarked { sender: _, hash: _ })
+				asset_hub::RuntimeEvent::System(frame_system::Event::<asset_hub::Runtime>::Remarked {
+					sender: _,
+					hash: _
+				})
 			)
 		}));
 	})
@@ -1059,8 +1061,8 @@ fn send_as_sovereign() {
 fn send_as_sovereign_fails_if_bad_origin() {
 	TestNet::reset();
 
-	Relay::execute_with(|| {
-		let _ = RelayBalances::deposit_creating(&para_a_account(), 1_000_000_000_000);
+	AssetHub::execute_with(|| {
+		let _ = AssetHubBalances::deposit_creating(&sibling_a_account(), 1_000_000_000_000);
 	});
 
 	ParaA::execute_with(|| {
@@ -1236,8 +1238,8 @@ fn specifying_more_than_assets_limit_should_error() {
 		assert_ok!(ParaTokens::deposit(CurrencyId::B2, &sibling_a_account(), 1_000));
 	});
 
-	Relay::execute_with(|| {
-		let _ = RelayBalances::deposit_creating(&para_a_account(), 1_000);
+	AssetHub::execute_with(|| {
+		let _ = AssetHubBalances::deposit_creating(&sibling_a_account(), 1_000);
 	});
 
 	ParaA::execute_with(|| {
@@ -1282,8 +1284,8 @@ fn sending_non_fee_assets_with_different_reserve_should_fail() {
 		assert_ok!(ParaTokens::deposit(CurrencyId::B, &sibling_a_account(), 1_000));
 	});
 
-	Relay::execute_with(|| {
-		let _ = RelayBalances::deposit_creating(&para_a_account(), 1_000);
+	AssetHub::execute_with(|| {
+		let _ = AssetHubBalances::deposit_creating(&sibling_a_account(), 1_000);
 	});
 
 	ParaA::execute_with(|| {
@@ -1561,8 +1563,8 @@ fn send_relative_view_sibling_asset_to_non_reserve_sibling() {
 fn send_relay_chain_asset_to_relative_view_sibling() {
 	TestNet::reset();
 
-	Relay::execute_with(|| {
-		let _ = RelayBalances::deposit_creating(&para_a_account(), 1000);
+	AssetHub::execute_with(|| {
+		let _ = AssetHubBalances::deposit_creating(&sibling_a_account(), 1000);
 	});
 
 	ParaA::execute_with(|| {
@@ -1588,9 +1590,9 @@ fn send_relay_chain_asset_to_relative_view_sibling() {
 		assert_eq!(ParaTokens::free_balance(CurrencyId::R, &ALICE), 500);
 	});
 
-	Relay::execute_with(|| {
-		assert_eq!(RelayBalances::free_balance(&para_a_account()), 500);
-		assert_eq!(RelayBalances::free_balance(&para_d_account()), 450);
+	AssetHub::execute_with(|| {
+		assert_eq!(AssetHubBalances::free_balance(&sibling_a_account()), 500);
+		assert_eq!(AssetHubBalances::free_balance(&sibling_d_account()), 450);
 	});
 
 	ParaD::execute_with(|| {
@@ -1726,11 +1728,11 @@ fn send_with_insufficient_weight_limit() {
 fn send_relay_chain_asset_to_relay_chain_at_rate_limit() {
 	TestNet::reset();
 
-	Relay::execute_with(|| {
-		let _ = RelayBalances::deposit_creating(&para_a_account(), 4000);
-		assert_eq!(RelayBalances::free_balance(&para_a_account()), 4000);
-		assert_eq!(RelayBalances::free_balance(&ALICE), 1000);
-		assert_eq!(RelayBalances::free_balance(&BOB), 0);
+	AssetHub::execute_with(|| {
+		let _ = AssetHubBalances::deposit_creating(&sibling_a_account(), 4000);
+		assert_eq!(AssetHubBalances::free_balance(&sibling_a_account()), 4000);
+		assert_eq!(AssetHubBalances::free_balance(&ALICE), 1000);
+		assert_eq!(AssetHubBalances::free_balance(&BOB), 0);
 	});
 
 	ParaA::execute_with(|| {
@@ -1826,10 +1828,10 @@ fn send_relay_chain_asset_to_relay_chain_at_rate_limit() {
 		assert_eq!(R_ACCUMULATION.with(|v| *v.borrow()), 2000);
 	});
 
-	Relay::execute_with(|| {
-		assert_eq!(RelayBalances::free_balance(&para_a_account()), 1799);
-		assert_eq!(RelayBalances::free_balance(&ALICE), 1151);
-		assert_eq!(RelayBalances::free_balance(&CHARLIE), 1900);
+	AssetHub::execute_with(|| {
+		assert_eq!(AssetHubBalances::free_balance(&sibling_a_account()), 1799);
+		assert_eq!(AssetHubBalances::free_balance(&ALICE), 1151);
+		assert_eq!(AssetHubBalances::free_balance(&CHARLIE), 1900);
 	});
 }
 

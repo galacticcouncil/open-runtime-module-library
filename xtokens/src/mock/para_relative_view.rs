@@ -1,4 +1,4 @@
-use super::{Amount, Balance, CurrencyId, CurrencyIdConvert, ParachainXcmRouter};
+use super::{AbsoluteReserveProvider, Amount, Balance, CurrencyId, CurrencyIdConvert, ParachainXcmRouter, RelativeReserveProvider};
 use crate as orml_xtokens;
 
 use frame_support::{
@@ -23,7 +23,7 @@ use xcm_executor::{Config, XcmExecutor};
 
 use crate::mock::AllTokensAreCreatedEqualToWeight;
 use orml_traits::{
-	location::{AbsoluteReserveProvider, RelativeReserveProvider, Reserve},
+	location::{Reserve, ASSET_HUB_ID},
 	parameter_type_with_key,
 };
 use orml_xcm_support::{IsNativeConcrete, MultiCurrencyAdapter};
@@ -350,6 +350,7 @@ impl Contains<Location> for ParentOrParachains {
 				| (1, [Parachain(3), Junction::AccountId32 { .. }])
 				| (1, [Parachain(4), Junction::AccountId32 { .. }])
 				| (1, [Parachain(100), Junction::AccountId32 { .. }])
+				| (1, [Parachain(ASSET_HUB_ID), Junction::AccountId32 { .. }])
 		)
 	}
 }

@@ -1,32 +1,24 @@
-use super::{
-	AbsoluteReserveProvider, AllowTopLevelPaidExecution, Amount, Balance, ConcreteAssetFromSystem, CurrencyId,
-	CurrencyIdConvert, ParachainXcmRouter,
-};
-use crate as orml_xtokens;
+use super::{AbsoluteReserveProvider, AllowTopLevelPaidExecution, Balance, ConcreteAssetFromSystem, ParachainXcmRouter};
 
 use frame_support::{
 	construct_runtime, derive_impl, parameter_types,
-	traits::{ConstU128, ConstU32, Contains, Everything, Get, Nothing},
+	traits::{ConstU128, ConstU32, ContainsPair, Everything, Get, Nothing},
 };
 use frame_system::EnsureRoot;
 use pallet_xcm::XcmPassthrough;
 use polkadot_parachain_primitives::primitives::Sibling;
-use sp_runtime::{
-	traits::{Convert, IdentityLookup},
-	AccountId32,
-};
+use sp_runtime::{traits::IdentityLookup, AccountId32};
+use sp_std::marker::PhantomData;
 use xcm::v5::{prelude::*, Weight};
 use xcm_builder::{
-	AccountId32Aliases, EnsureXcmOrigin, FixedWeightBounds, ParentIsPreset, RelayChainAsNative,
-	SiblingParachainAsNative, SiblingParachainConvertsVia, SignedAccountId32AsNative, SignedToAccountId32,
-	SovereignSignedViaLocation, TakeWeightCredit,
+	AccountId32Aliases, EnsureXcmOrigin, FixedWeightBounds, FungibleAdapter, IsConcrete, ParentIsPreset,
+	RelayChainAsNative, SiblingParachainAsNative, SiblingParachainConvertsVia, SignedAccountId32AsNative,
+	SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit,
 };
 use xcm_executor::{Config, XcmExecutor};
 
-use crate::mock::teleport_currency_adapter::MultiTeleportCurrencyAdapter;
 use crate::mock::{AllTokensAreCreatedEqualToWeight, KsmLocation};
-use orml_traits::parameter_type_with_key;
-use orml_xcm_support::{DisabledParachainFee, IsNativeConcrete, MultiNativeAsset};
+use orml_traits::location::Reserve;
 
 pub type AccountId = AccountId32;
 
@@ -55,27 +47,9 @@ impl pallet_balances::Config for Runtime {
 	type DoneSlashHandler = ();
 }
 
-parameter_type_with_key! {
-	pub ExistentialDeposits: |_currency_id: CurrencyId| -> Balance {
-		Default::default()
-	};
-}
-
-impl orml_tokens::Config for Runtime {
-	type Balance = Balance;
-	type Amount = Amount;
-	type CurrencyId = CurrencyId;
-	type WeightInfo = ();
-	type ExistentialDeposits = ExistentialDeposits;
-	type CurrencyHooks = ();
-	type MaxLocks = ConstU32<50>;
-	type MaxReserves = ConstU32<50>;
-	type ReserveIdentifier = [u8; 8];
-	type DustRemovalWhitelist = Everything;
-}
-
 parameter_types! {
 	pub const RelayNetwork: NetworkId = NetworkId::Kusama;
+	pub const RelayLocation: Location = Location::parent();
 	pub RelayChainOrigin: RuntimeOrigin = cumulus_pallet_xcm::Origin::Relay.into();
 	pub UniversalLocation: InteriorLocation =
 		[GlobalConsensus(RelayNetwork::get()), Parachain(MsgQueue::get().into())].into();
@@ -95,16 +69,8 @@ pub type XcmOriginToCallOrigin = (
 	XcmPassthrough<RuntimeOrigin>,
 );
 
-pub type LocalAssetTransactor = MultiTeleportCurrencyAdapter<
-	Tokens,
-	(),
-	IsNativeConcrete<CurrencyId, CurrencyIdConvert>,
-	AccountId,
-	LocationToAccountId,
-	CurrencyId,
-	CurrencyIdConvert,
-	(),
->;
+pub type LocalAssetTransactor =
+	FungibleAdapter<Balances, IsConcrete<RelayLocation>, LocationToAccountId, AccountId, ()>;
 
 pub type XcmRouter = ParachainXcmRouter<MsgQueue>;
 pub type Barrier = (TakeWeightCredit, AllowTopLevelPaidExecution);
@@ -114,6 +80,25 @@ parameter_types! {
 	pub const BaseXcmWeight: Weight = Weight::from_parts(100_000_000, 100_000_000);
 	pub const MaxInstructions: u32 = 100;
 	pub const MaxAssetsIntoHolding: u32 = 64;
+}
+
+pub struct MultiNativeAsset<ReserveProvider>(PhantomData<ReserveProvider>);
+impl<ReserveProvider> ContainsPair<Asset, Location> for MultiNativeAsset<ReserveProvider>
+where
+	ReserveProvider: Reserve,
+{
+	fn contains(asset: &Asset, origin: &Location) -> bool {
+		if let Some(ref reserve) = ReserveProvider::reserve(asset) {
+			if reserve == origin {
+				return true;
+			}
+		}
+		// allow parachain to be reserved of relay to bypass https://github.com/paritytech/polkadot-sdk/pull/5660
+		if asset.id.0 == Location::parent() {
+			return true;
+		}
+		false
+	}
 }
 
 pub struct XcmConfig;
@@ -184,60 +169,6 @@ impl pallet_xcm::Config for Runtime {
 	type AuthorizedAliasConsideration = ();
 }
 
-pub struct AccountIdToLocation;
-impl Convert<AccountId, Location> for AccountIdToLocation {
-	fn convert(account: AccountId) -> Location {
-		[Junction::AccountId32 {
-			network: None,
-			id: account.into(),
-		}]
-		.into()
-	}
-}
-
-parameter_types! {
-	pub SelfLocation: Location = Location::new(1, [Parachain(MsgQueue::get().into())]).into();
-	pub const MaxAssetsForTransfer: usize = 3;
-}
-
-pub struct ParentOrParachains;
-impl Contains<Location> for ParentOrParachains {
-	fn contains(location: &Location) -> bool {
-		matches!(
-			location.unpack(),
-			(0, [Junction::AccountId32 { .. }])
-				| (1, [Junction::AccountId32 { .. }])
-				| (1, [Parachain(1), Junction::AccountId32 { .. }])
-				| (1, [Parachain(2), Junction::AccountId32 { .. }])
-				| (1, [Parachain(3), Junction::AccountId32 { .. }])
-				| (1, [Parachain(4), Junction::AccountId32 { .. }])
-				| (1, [Parachain(100), Junction::AccountId32 { .. }])
-		)
-	}
-}
-
-impl orml_xtokens::Config for Runtime {
-	type Balance = Balance;
-	type CurrencyId = CurrencyId;
-	type CurrencyIdConvert = CurrencyIdConvert;
-	type AccountIdToLocation = AccountIdToLocation;
-	type SelfLocation = SelfLocation;
-	type LocationsFilter = ParentOrParachains;
-	type MinXcmFee = DisabledParachainFee;
-	type XcmExecutor = XcmExecutor<XcmConfig>;
-	type Weigher = FixedWeightBounds<UnitWeightCost, RuntimeCall, MaxInstructions>;
-	type BaseXcmWeight = BaseXcmWeight;
-	type UniversalLocation = UniversalLocation;
-	type MaxAssetsForTransfer = MaxAssetsForTransfer;
-	type ReserveProvider = AbsoluteReserveProvider;
-	type RateLimiter = ();
-	type RateLimiterId = ();
-}
-
-impl orml_xcm::Config for Runtime {
-	type SovereignOrigin = EnsureRoot<AccountId>;
-}
-
 impl orml_xcm_mock_message_queue::Config for Runtime {
 	type XcmExecutor = XcmExecutor<XcmConfig>;
 }
@@ -252,10 +183,6 @@ construct_runtime!(
 		MsgQueue: orml_xcm_mock_message_queue,
 		CumulusXcm: cumulus_pallet_xcm,
 
-		Tokens: orml_tokens,
-		XTokens: orml_xtokens,
-
 		PolkadotXcm: pallet_xcm,
-		OrmlXcm: orml_xcm,
 	}
 );
