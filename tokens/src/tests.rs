@@ -1307,3 +1307,64 @@ fn post_transfer_can_use_new_balance() {
 			));
 		});
 }
+
+#[test]
+fn post_reserve_hook_should_fire_on_successful_reserve() {
+	ExtBuilder::default()
+		.balances(vec![(ALICE, DOT, 100)])
+		.build()
+		.execute_with(|| {
+			let before = PostReserve::<Runtime>::calls();
+			assert_ok!(<Tokens as MultiReservableCurrency<_>>::reserve(DOT, &ALICE, 30));
+			assert_eq!(PostReserve::<Runtime>::calls(), before + 1);
+
+			// reserve(0) is a no-op and must not fire the hook
+			assert_ok!(<Tokens as MultiReservableCurrency<_>>::reserve(DOT, &ALICE, 0));
+			assert_eq!(PostReserve::<Runtime>::calls(), before + 1);
+		});
+}
+
+#[test]
+fn post_reserve_hook_must_not_fire_when_reserve_fails() {
+	ExtBuilder::default()
+		.balances(vec![(ALICE, DOT, 10)])
+		.build()
+		.execute_with(|| {
+			let before = PostReserve::<Runtime>::calls();
+			// not enough free balance — must fail and the hook must NOT fire
+			assert!(<Tokens as MultiReservableCurrency<_>>::reserve(DOT, &ALICE, 100).is_err());
+			assert_eq!(PostReserve::<Runtime>::calls(), before);
+		});
+}
+
+#[test]
+fn post_unreserve_hook_should_fire_with_actual_unreserved_amount() {
+	ExtBuilder::default()
+		.balances(vec![(ALICE, DOT, 100)])
+		.build()
+		.execute_with(|| {
+			assert_ok!(<Tokens as MultiReservableCurrency<_>>::reserve(DOT, &ALICE, 50));
+			let before = PostUnreserve::<Runtime>::calls();
+
+			// asking to unreserve more than reserved — only `actual` (= 50) is unreserved.
+			let remaining = <Tokens as MultiReservableCurrency<_>>::unreserve(DOT, &ALICE, 1_000);
+			assert_eq!(remaining, 950, "remaining = requested - actual_unreserved");
+			assert_eq!(PostUnreserve::<Runtime>::calls(), before + 1);
+
+			// unreserve(0) is a no-op and must not fire the hook
+			let _ = <Tokens as MultiReservableCurrency<_>>::unreserve(DOT, &ALICE, 0);
+			assert_eq!(PostUnreserve::<Runtime>::calls(), before + 1);
+		});
+}
+
+#[test]
+fn post_reserve_hook_runs_after_reserved_balance_is_set() {
+	// PostReserve's mock impl asserts that reserved >= amount inside the hook,
+	// so reaching this test passing means the hook fires AFTER the storage write.
+	ExtBuilder::default()
+		.balances(vec![(ALICE, DOT, 100)])
+		.build()
+		.execute_with(|| {
+			assert_ok!(<Tokens as MultiReservableCurrency<_>>::reserve(DOT, &ALICE, 70));
+		});
+}

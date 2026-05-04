@@ -705,6 +705,24 @@ impl<AccountId, CurrencyId, Balance> OnWithdraw<AccountId, CurrencyId, Balance> 
 	}
 }
 
+/// Hook to run after reserving funds from an account's free balance.
+pub trait OnReserve<AccountId, CurrencyId, Balance> {
+	fn on_reserve(currency_id: CurrencyId, who: &AccountId, amount: Balance);
+}
+
+impl<AccountId, CurrencyId, Balance> OnReserve<AccountId, CurrencyId, Balance> for () {
+	fn on_reserve(_: CurrencyId, _: &AccountId, _: Balance) {}
+}
+
+/// Hook to run after unreserving funds back into an account's free balance.
+pub trait OnUnreserve<AccountId, CurrencyId, Balance> {
+	fn on_unreserve(currency_id: CurrencyId, who: &AccountId, amount: Balance);
+}
+
+impl<AccountId, CurrencyId, Balance> OnUnreserve<AccountId, CurrencyId, Balance> for () {
+	fn on_unreserve(_: CurrencyId, _: &AccountId, _: Balance) {}
+}
+
 pub trait MutationHooks<AccountId, CurrencyId, Balance> {
 	/// Handler to burn or transfer account's dust.
 	type OnDust: OnDust<AccountId, CurrencyId, Balance>;
@@ -730,6 +748,12 @@ pub trait MutationHooks<AccountId, CurrencyId, Balance> {
 	/// Hook to run after withdrawing (burning) from an account.
 	type PostWithdraw: OnWithdraw<AccountId, CurrencyId, Balance>;
 
+	/// Hook to run after reserving an account's free balance.
+	type PostReserve: OnReserve<AccountId, CurrencyId, Balance>;
+
+	/// Hook to run after unreserving an account's reserved balance.
+	type PostUnreserve: OnUnreserve<AccountId, CurrencyId, Balance>;
+
 	/// Handler for when an account was created.
 	type OnNewTokenAccount: Happened<(AccountId, CurrencyId)>;
 
@@ -746,6 +770,8 @@ impl<AccountId, CurrencyId, Balance> MutationHooks<AccountId, CurrencyId, Balanc
 	type PostTransfer = ();
 	type PreWithdraw = ();
 	type PostWithdraw = ();
+	type PostReserve = ();
+	type PostUnreserve = ();
 	type OnNewTokenAccount = ();
 	type OnKilledTokenAccount = ();
 }

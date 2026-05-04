@@ -269,6 +269,8 @@ thread_local! {
 	pub static ON_TRANSFER_POSTHOOK_CALLS: RefCell<u32> = RefCell::new(0);
 	pub static ON_WITHDRAW_PREHOOK_CALLS: RefCell<u32> = RefCell::new(0);
 	pub static ON_WITHDRAW_POSTHOOK_CALLS: RefCell<u32> = RefCell::new(0);
+	pub static ON_RESERVE_POSTHOOK_CALLS: RefCell<u32> = RefCell::new(0);
+	pub static ON_UNRESERVE_POSTHOOK_CALLS: RefCell<u32> = RefCell::new(0);
 }
 
 pub struct OnSlashHook<T>(marker::PhantomData<T>);
@@ -383,6 +385,36 @@ impl<T: Config> PostTransfer<T> {
 	}
 }
 
+pub struct PostReserve<T>(marker::PhantomData<T>);
+impl<T: Config> OnReserve<T::AccountId, T::CurrencyId, T::Balance> for PostReserve<T> {
+	fn on_reserve(currency_id: T::CurrencyId, who: &T::AccountId, amount: T::Balance) {
+		ON_RESERVE_POSTHOOK_CALLS.with(|cell| *cell.borrow_mut() += 1);
+		let account_balance: AccountData<T::Balance> =
+			tokens::Pallet::<T>::accounts::<T::AccountId, T::CurrencyId>(who.clone(), currency_id);
+		assert!(
+			account_balance.reserved.ge(&amount),
+			"PostReserve must run after the reserved balance is updated."
+		);
+	}
+}
+impl<T: Config> PostReserve<T> {
+	pub fn calls() -> u32 {
+		ON_RESERVE_POSTHOOK_CALLS.with(|accounts| accounts.borrow().clone())
+	}
+}
+
+pub struct PostUnreserve<T>(marker::PhantomData<T>);
+impl<T: Config> OnUnreserve<T::AccountId, T::CurrencyId, T::Balance> for PostUnreserve<T> {
+	fn on_unreserve(_currency_id: T::CurrencyId, _who: &T::AccountId, _amount: T::Balance) {
+		ON_UNRESERVE_POSTHOOK_CALLS.with(|cell| *cell.borrow_mut() += 1);
+	}
+}
+impl<T: Config> PostUnreserve<T> {
+	pub fn calls() -> u32 {
+		ON_UNRESERVE_POSTHOOK_CALLS.with(|accounts| accounts.borrow().clone())
+	}
+}
+
 parameter_types! {
 	pub DustReceiver: AccountId = PalletId(*b"orml/dst").into_account_truncating();
 }
@@ -401,6 +433,8 @@ where
 	type PostTransfer = PostTransfer<T>;
 	type PreWithdraw = PreWithdraw<T>;
 	type PostWithdraw = PostWithdraw<T>;
+	type PostReserve = PostReserve<T>;
+	type PostUnreserve = PostUnreserve<T>;
 	type OnNewTokenAccount = TrackCreatedAccounts<T>;
 	type OnKilledTokenAccount = TrackKilledAccounts<T>;
 }

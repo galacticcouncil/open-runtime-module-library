@@ -66,7 +66,9 @@ use sp_std::{cmp, convert::Infallible, marker, prelude::*, vec::Vec};
 
 use orml_traits::{
 	arithmetic::{self, Signed},
-	currency::{MutationHooks, OnDeposit, OnDust, OnSlash, OnTransfer, OnWithdraw, TransferAll},
+	currency::{
+		MutationHooks, OnDeposit, OnDust, OnReserve, OnSlash, OnTransfer, OnUnreserve, OnWithdraw, TransferAll,
+	},
 	BalanceStatus, GetByKey, Happened, LockIdentifier, MultiCurrency, MultiCurrencyExtended, MultiLockableCurrency,
 	MultiReservableCurrency, NamedMultiReservableCurrency,
 };
@@ -1450,6 +1452,12 @@ impl<T: Config> MultiReservableCurrency<T::AccountId> for Pallet<T> {
 			});
 		});
 
+		<T::CurrencyHooks as MutationHooks<T::AccountId, T::CurrencyId, T::Balance>>::PostReserve::on_reserve(
+			currency_id,
+			who,
+			value,
+		);
+
 		Ok(())
 	}
 
@@ -1462,7 +1470,7 @@ impl<T: Config> MultiReservableCurrency<T::AccountId> for Pallet<T> {
 			return value;
 		}
 
-		let (remaining, _) = Self::mutate_account(who, currency_id, |account, _| {
+		let ((remaining, actual_unreserved), _) = Self::mutate_account(who, currency_id, |account, _| {
 			let actual = account.reserved.min(value);
 			account.reserved = account.reserved.defensive_saturating_sub(actual);
 			account.free = account.free.defensive_saturating_add(actual);
@@ -1472,8 +1480,14 @@ impl<T: Config> MultiReservableCurrency<T::AccountId> for Pallet<T> {
 				who: who.clone(),
 				amount: actual,
 			});
-			value.defensive_saturating_sub(actual)
+			(value.defensive_saturating_sub(actual), actual)
 		});
+
+		<T::CurrencyHooks as MutationHooks<T::AccountId, T::CurrencyId, T::Balance>>::PostUnreserve::on_unreserve(
+			currency_id,
+			who,
+			actual_unreserved,
+		);
 
 		remaining
 	}
