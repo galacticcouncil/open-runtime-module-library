@@ -723,6 +723,24 @@ impl<AccountId, CurrencyId, Balance> OnUnreserve<AccountId, CurrencyId, Balance>
 	fn on_unreserve(_: CurrencyId, _: &AccountId, _: Balance) {}
 }
 
+/// Hook to run after moving reserved balance from one account into another's
+/// free or reserved balance via `repatriate_reserved`. Fires only when
+/// `slashed != beneficiary` (the same-account case delegates to `unreserve`,
+/// which fires `OnUnreserve`).
+pub trait OnRepatriate<AccountId, CurrencyId, Balance> {
+	fn on_repatriate(
+		currency_id: CurrencyId,
+		slashed: &AccountId,
+		beneficiary: &AccountId,
+		amount: Balance,
+		status: crate::BalanceStatus,
+	);
+}
+
+impl<AccountId, CurrencyId, Balance> OnRepatriate<AccountId, CurrencyId, Balance> for () {
+	fn on_repatriate(_: CurrencyId, _: &AccountId, _: &AccountId, _: Balance, _: crate::BalanceStatus) {}
+}
+
 pub trait MutationHooks<AccountId, CurrencyId, Balance> {
 	/// Handler to burn or transfer account's dust.
 	type OnDust: OnDust<AccountId, CurrencyId, Balance>;
@@ -754,6 +772,10 @@ pub trait MutationHooks<AccountId, CurrencyId, Balance> {
 	/// Hook to run after unreserving an account's reserved balance.
 	type PostUnreserve: OnUnreserve<AccountId, CurrencyId, Balance>;
 
+	/// Hook to run after `repatriate_reserved` moves reserved balance between
+	/// two distinct accounts (only fires when `slashed != beneficiary`).
+	type PostRepatriate: OnRepatriate<AccountId, CurrencyId, Balance>;
+
 	/// Handler for when an account was created.
 	type OnNewTokenAccount: Happened<(AccountId, CurrencyId)>;
 
@@ -772,6 +794,7 @@ impl<AccountId, CurrencyId, Balance> MutationHooks<AccountId, CurrencyId, Balanc
 	type PostWithdraw = ();
 	type PostReserve = ();
 	type PostUnreserve = ();
+	type PostRepatriate = ();
 	type OnNewTokenAccount = ();
 	type OnKilledTokenAccount = ();
 }

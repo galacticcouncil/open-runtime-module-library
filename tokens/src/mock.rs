@@ -271,6 +271,7 @@ thread_local! {
 	pub static ON_WITHDRAW_POSTHOOK_CALLS: RefCell<u32> = RefCell::new(0);
 	pub static ON_RESERVE_POSTHOOK_CALLS: RefCell<u32> = RefCell::new(0);
 	pub static ON_UNRESERVE_POSTHOOK_CALLS: RefCell<u32> = RefCell::new(0);
+	pub static ON_REPATRIATE_POSTHOOK_CALLS: RefCell<u32> = RefCell::new(0);
 }
 
 pub struct OnSlashHook<T>(marker::PhantomData<T>);
@@ -415,6 +416,24 @@ impl<T: Config> PostUnreserve<T> {
 	}
 }
 
+pub struct PostRepatriate<T>(marker::PhantomData<T>);
+impl<T: Config> OnRepatriate<T::AccountId, T::CurrencyId, T::Balance> for PostRepatriate<T> {
+	fn on_repatriate(
+		_currency_id: T::CurrencyId,
+		_slashed: &T::AccountId,
+		_beneficiary: &T::AccountId,
+		_amount: T::Balance,
+		_status: orml_traits::BalanceStatus,
+	) {
+		ON_REPATRIATE_POSTHOOK_CALLS.with(|cell| *cell.borrow_mut() += 1);
+	}
+}
+impl<T: Config> PostRepatriate<T> {
+	pub fn calls() -> u32 {
+		ON_REPATRIATE_POSTHOOK_CALLS.with(|accounts| accounts.borrow().clone())
+	}
+}
+
 parameter_types! {
 	pub DustReceiver: AccountId = PalletId(*b"orml/dst").into_account_truncating();
 }
@@ -435,6 +454,7 @@ where
 	type PostWithdraw = PostWithdraw<T>;
 	type PostReserve = PostReserve<T>;
 	type PostUnreserve = PostUnreserve<T>;
+	type PostRepatriate = PostRepatriate<T>;
 	type OnNewTokenAccount = TrackCreatedAccounts<T>;
 	type OnKilledTokenAccount = TrackKilledAccounts<T>;
 }

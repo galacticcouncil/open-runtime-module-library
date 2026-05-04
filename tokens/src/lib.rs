@@ -67,7 +67,8 @@ use sp_std::{cmp, convert::Infallible, marker, prelude::*, vec::Vec};
 use orml_traits::{
 	arithmetic::{self, Signed},
 	currency::{
-		MutationHooks, OnDeposit, OnDust, OnReserve, OnSlash, OnTransfer, OnUnreserve, OnWithdraw, TransferAll,
+		MutationHooks, OnDeposit, OnDust, OnRepatriate, OnReserve, OnSlash, OnTransfer, OnUnreserve, OnWithdraw,
+		TransferAll,
 	},
 	BalanceStatus, GetByKey, Happened, LockIdentifier, MultiCurrency, MultiCurrencyExtended, MultiLockableCurrency,
 	MultiReservableCurrency, NamedMultiReservableCurrency,
@@ -1549,6 +1550,15 @@ impl<T: Config> MultiReservableCurrency<T::AccountId> for Pallet<T> {
 			amount: actual,
 			status,
 		});
+
+		<T::CurrencyHooks as MutationHooks<T::AccountId, T::CurrencyId, T::Balance>>::PostRepatriate::on_repatriate(
+			currency_id,
+			slashed,
+			beneficiary,
+			actual,
+			status,
+		);
+
 		Ok(value.defensive_saturating_sub(actual))
 	}
 }

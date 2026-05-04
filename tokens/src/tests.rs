@@ -1368,3 +1368,88 @@ fn post_reserve_hook_runs_after_reserved_balance_is_set() {
 			assert_ok!(<Tokens as MultiReservableCurrency<_>>::reserve(DOT, &ALICE, 70));
 		});
 }
+
+#[test]
+fn post_repatriate_hook_should_fire_when_slashed_differs_from_beneficiary() {
+	use orml_traits::BalanceStatus;
+	ExtBuilder::default()
+		.balances(vec![(ALICE, DOT, 100)])
+		.build()
+		.execute_with(|| {
+			assert_ok!(<Tokens as MultiReservableCurrency<_>>::reserve(DOT, &ALICE, 50));
+			let before = PostRepatriate::<Runtime>::calls();
+			assert_ok!(<Tokens as MultiReservableCurrency<_>>::repatriate_reserved(
+				DOT,
+				&ALICE,
+				&BOB,
+				30,
+				BalanceStatus::Free,
+			));
+			assert_eq!(PostRepatriate::<Runtime>::calls(), before + 1);
+
+			// repatriate(0) is a no-op and must not fire
+			assert_ok!(<Tokens as MultiReservableCurrency<_>>::repatriate_reserved(
+				DOT,
+				&ALICE,
+				&BOB,
+				0,
+				BalanceStatus::Free,
+			));
+			assert_eq!(PostRepatriate::<Runtime>::calls(), before + 1);
+		});
+}
+
+#[test]
+fn post_repatriate_hook_must_not_fire_when_slashed_equals_beneficiary() {
+	use orml_traits::BalanceStatus;
+	ExtBuilder::default()
+		.balances(vec![(ALICE, DOT, 100)])
+		.build()
+		.execute_with(|| {
+			assert_ok!(<Tokens as MultiReservableCurrency<_>>::reserve(DOT, &ALICE, 50));
+			let repat_before = PostRepatriate::<Runtime>::calls();
+			let unreserve_before = PostUnreserve::<Runtime>::calls();
+
+			// status=Free with slashed==beneficiary delegates to unreserve internally,
+			// so OnRepatriate must NOT fire (OnUnreserve does instead).
+			assert_ok!(<Tokens as MultiReservableCurrency<_>>::repatriate_reserved(
+				DOT,
+				&ALICE,
+				&ALICE,
+				20,
+				BalanceStatus::Free,
+			));
+			assert_eq!(PostRepatriate::<Runtime>::calls(), repat_before);
+			assert_eq!(PostUnreserve::<Runtime>::calls(), unreserve_before + 1);
+
+			// status=Reserved with slashed==beneficiary is also a no-op for repatriate
+			assert_ok!(<Tokens as MultiReservableCurrency<_>>::repatriate_reserved(
+				DOT,
+				&ALICE,
+				&ALICE,
+				20,
+				BalanceStatus::Reserved,
+			));
+			assert_eq!(PostRepatriate::<Runtime>::calls(), repat_before);
+		});
+}
+
+#[test]
+fn post_repatriate_hook_fires_for_status_reserved() {
+	use orml_traits::BalanceStatus;
+	ExtBuilder::default()
+		.balances(vec![(ALICE, DOT, 100), (BOB, DOT, 100)])
+		.build()
+		.execute_with(|| {
+			assert_ok!(<Tokens as MultiReservableCurrency<_>>::reserve(DOT, &ALICE, 50));
+			let before = PostRepatriate::<Runtime>::calls();
+			assert_ok!(<Tokens as MultiReservableCurrency<_>>::repatriate_reserved(
+				DOT,
+				&ALICE,
+				&BOB,
+				30,
+				BalanceStatus::Reserved,
+			));
+			assert_eq!(PostRepatriate::<Runtime>::calls(), before + 1);
+		});
+}
