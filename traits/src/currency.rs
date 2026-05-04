@@ -694,6 +694,17 @@ impl<AccountId, CurrencyId, Balance> OnTransfer<AccountId, CurrencyId, Balance> 
 	}
 }
 
+/// Hook to run on a withdraw (burn) from an account.
+pub trait OnWithdraw<AccountId, CurrencyId, Balance> {
+	fn on_withdraw(currency_id: CurrencyId, who: &AccountId, amount: Balance) -> DispatchResult;
+}
+
+impl<AccountId, CurrencyId, Balance> OnWithdraw<AccountId, CurrencyId, Balance> for () {
+	fn on_withdraw(_: CurrencyId, _: &AccountId, _: Balance) -> DispatchResult {
+		Ok(())
+	}
+}
+
 pub trait MutationHooks<AccountId, CurrencyId, Balance> {
 	/// Handler to burn or transfer account's dust.
 	type OnDust: OnDust<AccountId, CurrencyId, Balance>;
@@ -713,6 +724,12 @@ pub trait MutationHooks<AccountId, CurrencyId, Balance> {
 	/// Hook to run after transferring from an account to another.
 	type PostTransfer: OnTransfer<AccountId, CurrencyId, Balance>;
 
+	/// Hook to run before withdrawing (burning) from an account.
+	type PreWithdraw: OnWithdraw<AccountId, CurrencyId, Balance>;
+
+	/// Hook to run after withdrawing (burning) from an account.
+	type PostWithdraw: OnWithdraw<AccountId, CurrencyId, Balance>;
+
 	/// Handler for when an account was created.
 	type OnNewTokenAccount: Happened<(AccountId, CurrencyId)>;
 
@@ -727,6 +744,8 @@ impl<AccountId, CurrencyId, Balance> MutationHooks<AccountId, CurrencyId, Balanc
 	type PostDeposit = ();
 	type PreTransfer = ();
 	type PostTransfer = ();
+	type PreWithdraw = ();
+	type PostWithdraw = ();
 	type OnNewTokenAccount = ();
 	type OnKilledTokenAccount = ();
 }

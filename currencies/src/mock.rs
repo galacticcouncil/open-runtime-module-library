@@ -70,6 +70,8 @@ where
 	type PostDeposit = ();
 	type PreTransfer = ();
 	type PostTransfer = ();
+	type PreWithdraw = ();
+	type PostWithdraw = ();
 	type OnNewTokenAccount = ();
 	type OnKilledTokenAccount = ();
 }

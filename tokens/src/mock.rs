@@ -267,6 +267,8 @@ thread_local! {
 	pub static ON_DEPOSIT_POSTHOOK_CALLS: RefCell<u32> = RefCell::new(0);
 	pub static ON_TRANSFER_PREHOOK_CALLS: RefCell<u32> = RefCell::new(0);
 	pub static ON_TRANSFER_POSTHOOK_CALLS: RefCell<u32> = RefCell::new(0);
+	pub static ON_WITHDRAW_PREHOOK_CALLS: RefCell<u32> = RefCell::new(0);
+	pub static ON_WITHDRAW_POSTHOOK_CALLS: RefCell<u32> = RefCell::new(0);
 }
 
 pub struct OnSlashHook<T>(marker::PhantomData<T>);
@@ -331,6 +333,32 @@ impl<T: Config> PreTransfer<T> {
 	}
 }
 
+pub struct PreWithdraw<T>(marker::PhantomData<T>);
+impl<T: Config> OnWithdraw<T::AccountId, T::CurrencyId, T::Balance> for PreWithdraw<T> {
+	fn on_withdraw(_currency_id: T::CurrencyId, _who: &T::AccountId, _amount: T::Balance) -> DispatchResult {
+		ON_WITHDRAW_PREHOOK_CALLS.with(|cell| *cell.borrow_mut() += 1);
+		Ok(())
+	}
+}
+impl<T: Config> PreWithdraw<T> {
+	pub fn calls() -> u32 {
+		ON_WITHDRAW_PREHOOK_CALLS.with(|accounts| accounts.borrow().clone())
+	}
+}
+
+pub struct PostWithdraw<T>(marker::PhantomData<T>);
+impl<T: Config> OnWithdraw<T::AccountId, T::CurrencyId, T::Balance> for PostWithdraw<T> {
+	fn on_withdraw(_currency_id: T::CurrencyId, _who: &T::AccountId, _amount: T::Balance) -> DispatchResult {
+		ON_WITHDRAW_POSTHOOK_CALLS.with(|cell| *cell.borrow_mut() += 1);
+		Ok(())
+	}
+}
+impl<T: Config> PostWithdraw<T> {
+	pub fn calls() -> u32 {
+		ON_WITHDRAW_POSTHOOK_CALLS.with(|accounts| accounts.borrow().clone())
+	}
+}
+
 pub struct PostTransfer<T>(marker::PhantomData<T>);
 impl<T: Config> OnTransfer<T::AccountId, T::CurrencyId, T::Balance> for PostTransfer<T> {
 	fn on_transfer(
@@ -371,6 +399,8 @@ where
 	type PostDeposit = PostDeposit<T>;
 	type PreTransfer = PreTransfer<T>;
 	type PostTransfer = PostTransfer<T>;
+	type PreWithdraw = PreWithdraw<T>;
+	type PostWithdraw = PostWithdraw<T>;
 	type OnNewTokenAccount = TrackCreatedAccounts<T>;
 	type OnKilledTokenAccount = TrackKilledAccounts<T>;
 }

@@ -1251,6 +1251,44 @@ fn transfer_hooks_work() {
 }
 
 #[test]
+fn withdraw_hooks_work() {
+	ExtBuilder::default()
+		.balances(vec![(ALICE, DOT, 100)])
+		.build()
+		.execute_with(|| {
+			let initial_prehook_calls = PreWithdraw::<Runtime>::calls();
+			let initial_posthook_calls = PostWithdraw::<Runtime>::calls();
+
+			assert_ok!(Tokens::do_withdraw(
+				DOT,
+				&ALICE,
+				0,
+				ExistenceRequirement::AllowDeath,
+				true,
+			));
+			assert_eq!(PreWithdraw::<Runtime>::calls(), initial_prehook_calls);
+			assert_eq!(PostWithdraw::<Runtime>::calls(), initial_posthook_calls);
+
+			assert_ok!(Tokens::do_withdraw(
+				DOT,
+				&ALICE,
+				10,
+				ExistenceRequirement::AllowDeath,
+				true,
+			));
+			assert_eq!(PreWithdraw::<Runtime>::calls(), initial_prehook_calls + 1);
+			assert_eq!(PostWithdraw::<Runtime>::calls(), initial_posthook_calls + 1);
+
+			assert_noop!(
+				Tokens::do_withdraw(DOT, &ALICE, 1_000_000, ExistenceRequirement::AllowDeath, true),
+				Error::<Runtime>::BalanceTooLow
+			);
+			assert_eq!(PreWithdraw::<Runtime>::calls(), initial_prehook_calls + 2);
+			assert_eq!(PostWithdraw::<Runtime>::calls(), initial_posthook_calls + 1);
+		});
+}
+
+#[test]
 fn post_transfer_can_use_new_balance() {
 	ExtBuilder::default()
 		.balances(vec![(ALICE, DOT, 100)])

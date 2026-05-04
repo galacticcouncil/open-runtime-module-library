@@ -66,7 +66,7 @@ use sp_std::{cmp, convert::Infallible, marker, prelude::*, vec::Vec};
 
 use orml_traits::{
 	arithmetic::{self, Signed},
-	currency::{MutationHooks, OnDeposit, OnDust, OnSlash, OnTransfer, TransferAll},
+	currency::{MutationHooks, OnDeposit, OnDust, OnSlash, OnTransfer, OnWithdraw, TransferAll},
 	BalanceStatus, GetByKey, Happened, LockIdentifier, MultiCurrency, MultiCurrencyExtended, MultiLockableCurrency,
 	MultiReservableCurrency, NamedMultiReservableCurrency,
 };
@@ -1022,6 +1022,12 @@ impl<T: Config> Pallet<T> {
 			return Ok(());
 		}
 
+		<T::CurrencyHooks as MutationHooks<T::AccountId, T::CurrencyId, T::Balance>>::PreWithdraw::on_withdraw(
+			currency_id,
+			who,
+			amount,
+		)?;
+
 		Self::try_mutate_account(who, currency_id, |account, _existed| -> DispatchResult {
 			Self::ensure_can_withdraw(currency_id, who, amount)?;
 			let previous_total = account.total();
@@ -1056,6 +1062,12 @@ impl<T: Config> Pallet<T> {
 			});
 			Ok(())
 		})?;
+
+		<T::CurrencyHooks as MutationHooks<T::AccountId, T::CurrencyId, T::Balance>>::PostWithdraw::on_withdraw(
+			currency_id,
+			who,
+			amount,
+		)?;
 
 		Ok(())
 	}
