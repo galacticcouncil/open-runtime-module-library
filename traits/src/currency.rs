@@ -723,6 +723,17 @@ impl<AccountId, CurrencyId, Balance> OnUnreserve<AccountId, CurrencyId, Balance>
 	fn on_unreserve(_: CurrencyId, _: &AccountId, _: Balance) {}
 }
 
+/// Hook to run after slashing funds from an account's reserved balance
+/// (semantically distinct from `OnSlash`, which is used for slashing free
+/// balance / mixed slashing via `MultiCurrency::slash`).
+pub trait OnSlashReserved<AccountId, CurrencyId, Balance> {
+	fn on_slash_reserved(currency_id: CurrencyId, who: &AccountId, amount: Balance);
+}
+
+impl<AccountId, CurrencyId, Balance> OnSlashReserved<AccountId, CurrencyId, Balance> for () {
+	fn on_slash_reserved(_: CurrencyId, _: &AccountId, _: Balance) {}
+}
+
 /// Hook to run after moving reserved balance from one account into another's
 /// free or reserved balance via `repatriate_reserved`. Fires only when
 /// `slashed != beneficiary` (the same-account case delegates to `unreserve`,
@@ -772,6 +783,9 @@ pub trait MutationHooks<AccountId, CurrencyId, Balance> {
 	/// Hook to run after unreserving an account's reserved balance.
 	type PostUnreserve: OnUnreserve<AccountId, CurrencyId, Balance>;
 
+	/// Hook to run after slashing funds from an account's reserved balance.
+	type PostSlashReserved: OnSlashReserved<AccountId, CurrencyId, Balance>;
+
 	/// Hook to run after `repatriate_reserved` moves reserved balance between
 	/// two distinct accounts (only fires when `slashed != beneficiary`).
 	type PostRepatriate: OnRepatriate<AccountId, CurrencyId, Balance>;
@@ -794,6 +808,7 @@ impl<AccountId, CurrencyId, Balance> MutationHooks<AccountId, CurrencyId, Balanc
 	type PostWithdraw = ();
 	type PostReserve = ();
 	type PostUnreserve = ();
+	type PostSlashReserved = ();
 	type PostRepatriate = ();
 	type OnNewTokenAccount = ();
 	type OnKilledTokenAccount = ();

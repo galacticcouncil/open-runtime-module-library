@@ -272,6 +272,7 @@ thread_local! {
 	pub static ON_RESERVE_POSTHOOK_CALLS: RefCell<u32> = RefCell::new(0);
 	pub static ON_UNRESERVE_POSTHOOK_CALLS: RefCell<u32> = RefCell::new(0);
 	pub static ON_REPATRIATE_POSTHOOK_CALLS: RefCell<u32> = RefCell::new(0);
+	pub static ON_SLASH_RESERVED_POSTHOOK_CALLS: RefCell<u32> = RefCell::new(0);
 }
 
 pub struct OnSlashHook<T>(marker::PhantomData<T>);
@@ -416,6 +417,18 @@ impl<T: Config> PostUnreserve<T> {
 	}
 }
 
+pub struct PostSlashReserved<T>(marker::PhantomData<T>);
+impl<T: Config> OnSlashReserved<T::AccountId, T::CurrencyId, T::Balance> for PostSlashReserved<T> {
+	fn on_slash_reserved(_currency_id: T::CurrencyId, _who: &T::AccountId, _amount: T::Balance) {
+		ON_SLASH_RESERVED_POSTHOOK_CALLS.with(|cell| *cell.borrow_mut() += 1);
+	}
+}
+impl<T: Config> PostSlashReserved<T> {
+	pub fn calls() -> u32 {
+		ON_SLASH_RESERVED_POSTHOOK_CALLS.with(|accounts| accounts.borrow().clone())
+	}
+}
+
 pub struct PostRepatriate<T>(marker::PhantomData<T>);
 impl<T: Config> OnRepatriate<T::AccountId, T::CurrencyId, T::Balance> for PostRepatriate<T> {
 	fn on_repatriate(
@@ -454,6 +467,7 @@ where
 	type PostWithdraw = PostWithdraw<T>;
 	type PostReserve = PostReserve<T>;
 	type PostUnreserve = PostUnreserve<T>;
+	type PostSlashReserved = PostSlashReserved<T>;
 	type PostRepatriate = PostRepatriate<T>;
 	type OnNewTokenAccount = TrackCreatedAccounts<T>;
 	type OnKilledTokenAccount = TrackKilledAccounts<T>;

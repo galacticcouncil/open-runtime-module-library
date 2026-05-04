@@ -1370,6 +1370,27 @@ fn post_reserve_hook_runs_after_reserved_balance_is_set() {
 }
 
 #[test]
+fn post_slash_reserved_hook_fires_with_actual_slashed_amount() {
+	ExtBuilder::default()
+		.balances(vec![(ALICE, DOT, 100)])
+		.build()
+		.execute_with(|| {
+			assert_ok!(<Tokens as MultiReservableCurrency<_>>::reserve(DOT, &ALICE, 30));
+			let before = PostSlashReserved::<Runtime>::calls();
+
+			let remaining = <Tokens as MultiReservableCurrency<_>>::slash_reserved(DOT, &ALICE, 100);
+			// reserved is 30, asked 100 — actual=30, remaining=70
+			assert_eq!(remaining, 70);
+			assert_eq!(PostSlashReserved::<Runtime>::calls(), before + 1);
+
+			// slash_reserved(0) is a no-op
+			let remaining = <Tokens as MultiReservableCurrency<_>>::slash_reserved(DOT, &ALICE, 0);
+			assert_eq!(remaining, 0);
+			assert_eq!(PostSlashReserved::<Runtime>::calls(), before + 1);
+		});
+}
+
+#[test]
 fn post_repatriate_hook_should_fire_when_slashed_differs_from_beneficiary() {
 	use orml_traits::BalanceStatus;
 	ExtBuilder::default()
