@@ -143,7 +143,7 @@ macro_rules! define_parameters {
 				$crate::parameters::parity_scale_codec::Encode,
 				$crate::parameters::parity_scale_codec::Decode,
 				$crate::parameters::parity_scale_codec::MaxEncodedLen,
-				$crate::parameters::sp_runtime::RuntimeDebug,
+				$crate::parameters::sp_runtime::Debug,
 				$crate::parameters::scale_info::TypeInfo,
 				$crate::parameters::parity_scale_codec::DecodeWithMemTracking
 			)]
@@ -161,7 +161,7 @@ macro_rules! define_parameters {
 				$crate::parameters::parity_scale_codec::Encode,
 				$crate::parameters::parity_scale_codec::Decode,
 				$crate::parameters::parity_scale_codec::MaxEncodedLen,
-				$crate::parameters::sp_runtime::RuntimeDebug,
+				$crate::parameters::sp_runtime::Debug,
 				$crate::parameters::scale_info::TypeInfo,
 				$crate::parameters::parity_scale_codec::DecodeWithMemTracking
 			)]
@@ -179,7 +179,7 @@ macro_rules! define_parameters {
 				$crate::parameters::parity_scale_codec::Encode,
 				$crate::parameters::parity_scale_codec::Decode,
 				$crate::parameters::parity_scale_codec::MaxEncodedLen,
-				$crate::parameters::sp_runtime::RuntimeDebug,
+				$crate::parameters::sp_runtime::Debug,
 				$crate::parameters::scale_info::TypeInfo,
 				$crate::parameters::parity_scale_codec::DecodeWithMemTracking
 			)]
@@ -211,7 +211,7 @@ macro_rules! define_parameters {
 					$crate::parameters::parity_scale_codec::Encode,
 					$crate::parameters::parity_scale_codec::Decode,
 					$crate::parameters::parity_scale_codec::MaxEncodedLen,
-					$crate::parameters::sp_runtime::RuntimeDebug,
+					$crate::parameters::sp_runtime::Debug,
 					$crate::parameters::scale_info::TypeInfo,
 					$crate::parameters::parity_scale_codec::DecodeWithMemTracking
 				)]
@@ -234,8 +234,7 @@ macro_rules! define_parameters {
 					fn try_from(key: [<$name Key>]) -> Result<Self, Self::Error> {
 						match key {
 							[<$name Key>]::$key_name(key) => Ok(key),
-							_ => Err(()),
-						}
+							_ => Err(())}
 					}
 				}
 
@@ -243,7 +242,7 @@ macro_rules! define_parameters {
 					Clone,
 					PartialEq,
 					Eq,
-					$crate::parameters::sp_runtime::RuntimeDebug
+					$crate::parameters::sp_runtime::Debug
 				)]
 				$vis struct [<$key_name Value>](pub $value_type);
 
@@ -271,8 +270,7 @@ macro_rules! define_parameters {
 					fn try_from(value: [<$name Value>]) -> Result<Self, Self::Error> {
 						match value {
 							[<$name Value>]::$key_name(value) => Ok([<$key_name Value>](value)),
-							_ => Err(()),
-						}
+							_ => Err(())}
 					}
 				}
 
@@ -337,7 +335,7 @@ macro_rules! define_aggregrated_parameters {
 				$crate::parameters::parity_scale_codec::Encode,
 				$crate::parameters::parity_scale_codec::Decode,
 				$crate::parameters::parity_scale_codec::MaxEncodedLen,
-				$crate::parameters::sp_runtime::RuntimeDebug,
+				$crate::parameters::sp_runtime::Debug,
 				$crate::parameters::scale_info::TypeInfo,
 				$crate::parameters::parity_scale_codec::DecodeWithMemTracking
 			)]
@@ -355,7 +353,7 @@ macro_rules! define_aggregrated_parameters {
 				$crate::parameters::parity_scale_codec::Encode,
 				$crate::parameters::parity_scale_codec::Decode,
 				$crate::parameters::parity_scale_codec::MaxEncodedLen,
-				$crate::parameters::sp_runtime::RuntimeDebug,
+				$crate::parameters::sp_runtime::Debug,
 				$crate::parameters::scale_info::TypeInfo,
 				$crate::parameters::parity_scale_codec::DecodeWithMemTracking
 			)]
@@ -373,7 +371,7 @@ macro_rules! define_aggregrated_parameters {
 				$crate::parameters::parity_scale_codec::Encode,
 				$crate::parameters::parity_scale_codec::Decode,
 				$crate::parameters::parity_scale_codec::MaxEncodedLen,
-				$crate::parameters::sp_runtime::RuntimeDebug,
+				$crate::parameters::sp_runtime::Debug,
 				$crate::parameters::scale_info::TypeInfo,
 				$crate::parameters::parity_scale_codec::DecodeWithMemTracking
 			)]
@@ -413,8 +411,7 @@ macro_rules! define_aggregrated_parameters {
 					fn try_from2(value: [<$name Value>]) -> Result<Self, Self::Error> {
 						match value {
 							[<$name Value>]::$parameter_name(value) => Ok(value),
-							_ => Err(()),
-						}
+							_ => Err(())}
 					}
 				}
 			)*
@@ -429,8 +426,7 @@ mod tests {
 			pub Parameters = {
 				Key1: u64 = 0,
 				Key2(u32): u32 = 1,
-				Key3((u8, u8)): u128 = 2,
-			}
+				Key3((u8, u8)): u128 = 2}
 		}
 	}
 	pub mod pallet2 {
@@ -438,15 +434,13 @@ mod tests {
 			pub Parameters = {
 				Key1: u64 = 0,
 				Key2(u32): u32 = 2,
-				Key3((u8, u8)): u128 = 4,
-			}
+				Key3((u8, u8)): u128 = 4}
 		}
 	}
 	define_aggregrated_parameters! {
 		pub RuntimeParameters = {
 			Pallet1: pallet1::Parameters = 0,
-			Pallet2: pallet2::Parameters = 3,
-		}
+			Pallet2: pallet2::Parameters = 3}
 	}
 
 	#[test]

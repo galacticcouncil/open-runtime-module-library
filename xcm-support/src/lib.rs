@@ -21,7 +21,7 @@ use xcm_executor::traits::MatchesFungible;
 
 use orml_traits::{location::Reserve, GetByKey};
 
-pub use currency_adapter::{DepositToAlternative, MultiCurrencyAdapter, OnDepositFail};
+pub use currency_adapter::{AmountCredit, DepositToAlternative, MultiCurrencyAdapter, OnDepositFail};
 
 mod currency_adapter;
 

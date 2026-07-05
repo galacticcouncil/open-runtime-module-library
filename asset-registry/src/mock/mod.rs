@@ -28,7 +28,7 @@ pub const CHARLIE: AccountId32 = AccountId32::new([2u8; 32]);
 	PartialEq,
 	Copy,
 	Clone,
-	RuntimeDebug,
+	Debug,
 	PartialOrd,
 	Ord,
 	parity_scale_codec::MaxEncodedLen,
@@ -176,8 +176,7 @@ decl_test_parachain! {
 		Runtime = para::Runtime,
 		XcmpMessageHandler = para::MsgQueue,
 		DmpMessageHandler = para::MsgQueue,
-		new_ext = para_ext(1, None),
-	}
+		new_ext = para_ext(1, None)}
 }
 
 decl_test_parachain! {
@@ -185,8 +184,7 @@ decl_test_parachain! {
 		Runtime = para::Runtime,
 		XcmpMessageHandler = para::MsgQueue,
 		DmpMessageHandler = para::MsgQueue,
-		new_ext = para_ext(2, None),
-	}
+		new_ext = para_ext(2, None)}
 }
 
 decl_test_parachain! {
@@ -194,8 +192,7 @@ decl_test_parachain! {
 		Runtime = para::Runtime,
 		XcmpMessageHandler = para::MsgQueue,
 		DmpMessageHandler = para::MsgQueue,
-		new_ext = para_ext(3, None),
-	}
+		new_ext = para_ext(3, None)}
 }
 
 decl_test_parachain! {
@@ -213,9 +210,7 @@ decl_test_parachain! {
 				existential_deposit: 0,
 				location: None,
 				additional: para::CustomMetadata {
-					fee_per_second: 1_000_000_000_000,
-				},
-			})),
+					fee_per_second: 1_000_000_000_000}})),
 			(
 				5,
 				AssetMetadata::<Balance, para::CustomMetadata, para::StringLimit>::encode(&AssetMetadata {
@@ -225,11 +220,8 @@ decl_test_parachain! {
 				existential_deposit: 0,
 				location: None,
 				additional: para::CustomMetadata {
-					fee_per_second: 1_000_000_000_000,
-				},
-			}))], 5
-		))),
-	}
+					fee_per_second: 1_000_000_000_000}}))], 5
+		)))}
 }
 
 decl_test_relay_chain! {
@@ -240,8 +232,7 @@ decl_test_relay_chain! {
 		XcmConfig = relay::XcmConfig,
 		MessageQueue = relay::MessageQueue,
 		System = relay::System,
-		new_ext = relay_ext(),
-	}
+		new_ext = relay_ext()}
 }
 
 decl_test_network! {
@@ -252,8 +243,7 @@ decl_test_network! {
 			(2, ParaB),
 			(3, ParaC),
 			(4, ParaG),
-		],
-	}
+		]}
 }
 
 pub type ParaTokens = orml_tokens::Pallet<para::Runtime>;

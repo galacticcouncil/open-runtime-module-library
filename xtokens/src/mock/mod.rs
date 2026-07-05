@@ -31,7 +31,7 @@ pub const CHARLIE: AccountId32 = AccountId32::new([2u8; 32]);
 	PartialEq,
 	Copy,
 	Clone,
-	RuntimeDebug,
+	Debug,
 	PartialOrd,
 	Ord,
 	parity_scale_codec::MaxEncodedLen,
@@ -187,8 +187,7 @@ decl_test_parachain! {
 		Runtime = para::Runtime,
 		XcmpMessageHandler = para::MsgQueue,
 		DmpMessageHandler = para::MsgQueue,
-		new_ext = para_ext(1),
-	}
+		new_ext = para_ext(1)}
 }
 
 decl_test_parachain! {
@@ -196,8 +195,7 @@ decl_test_parachain! {
 		Runtime = para::Runtime,
 		XcmpMessageHandler = para::MsgQueue,
 		DmpMessageHandler = para::MsgQueue,
-		new_ext = para_ext(2),
-	}
+		new_ext = para_ext(2)}
 }
 
 decl_test_parachain! {
@@ -205,8 +203,7 @@ decl_test_parachain! {
 		Runtime = para_teleport::Runtime,
 		XcmpMessageHandler = para_teleport::MsgQueue,
 		DmpMessageHandler = para_teleport::MsgQueue,
-		new_ext = para_teleport_ext(3),
-	}
+		new_ext = para_teleport_ext(3)}
 }
 
 // This parachain is identical to the others but using relative view for self
@@ -216,8 +213,7 @@ decl_test_parachain! {
 		Runtime = para_relative_view::Runtime,
 		XcmpMessageHandler = para::MsgQueue,
 		DmpMessageHandler = para::MsgQueue,
-		new_ext = para_ext(4),
-	}
+		new_ext = para_ext(4)}
 }
 
 decl_test_relay_chain! {
@@ -228,8 +224,7 @@ decl_test_relay_chain! {
 		XcmConfig = relay::XcmConfig,
 		MessageQueue = relay::MessageQueue,
 		System = relay::System,
-		new_ext = relay_ext(),
-	}
+		new_ext = relay_ext()}
 }
 
 decl_test_network! {
@@ -240,8 +235,7 @@ decl_test_network! {
 			(2, ParaB),
 			(3, ParaC),
 			(4, ParaD),
-		],
-	}
+		]}
 }
 
 pub type RelayBalances = pallet_balances::Pallet<relay::Runtime>;

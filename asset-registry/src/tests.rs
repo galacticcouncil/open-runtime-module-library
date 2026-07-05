@@ -130,7 +130,7 @@ fn send_self_parachain_asset_to_sibling() {
 						Parachain(2),
 						Junction::AccountId32 {
 							network: None,
-							id: BOB.into(),
+							id: BOB.into()
 						}
 					]
 				)
@@ -228,7 +228,7 @@ fn send_sibling_asset_to_non_reserve_sibling() {
 						Parachain(3),
 						Junction::AccountId32 {
 							network: None,
-							id: BOB.into(),
+							id: BOB.into()
 						}
 					]
 				)
@@ -332,7 +332,7 @@ fn test_fixed_rate_asset_trader() {
 						Parachain(2),
 						Junction::AccountId32 {
 							network: None,
-							id: BOB.into(),
+							id: BOB.into()
 						}
 					]
 				)
@@ -383,7 +383,7 @@ fn test_fixed_rate_asset_trader() {
 						Parachain(2),
 						Junction::AccountId32 {
 							network: None,
-							id: BOB.into(),
+							id: BOB.into()
 						}
 					]
 				)
@@ -597,7 +597,7 @@ fn test_decode_bounded_vec() {
 			OptionQuery,
 		>;
 
-		#[derive(TypeInfo, Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
+		#[derive(TypeInfo, Encode, Decode, Clone, Eq, PartialEq, Debug)]
 		pub struct AssetMetadata<Balance, CustomMetadata: Parameter + Member + TypeInfo> {
 			pub decimals: u32,
 			pub name: Vec<u8>,
